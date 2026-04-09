@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+#Template mau
+znewsbit-bootstrap-main/
+
 # User-specific files
 *.rsuser
 *.suo
