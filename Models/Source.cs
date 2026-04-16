@@ -1,4 +1,4 @@
-namespace NewsAggregation.Models
+namespace NewsAggregator.Models
 {
     public class Source
     {
@@ -9,6 +9,6 @@ namespace NewsAggregation.Models
         public string? LogoUrl {get; set;}
         public bool IsActive {get; set;} = true;
         public ICollection<Post> Posts {get; set;} = new List<Post>();
-        public ICollection<CrawlLog> CrawlLogs {get; set;} = new List<CrawLog>();
+        public ICollection<CrawlLog> CrawlLogs {get; set;} = new List<CrawlLog>();
     }
 }

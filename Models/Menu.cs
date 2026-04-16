@@ -1,4 +1,4 @@
-namespace NewAggregation.Models
+namespace NewsAggregator.Models
 {
     public class Menu
     {

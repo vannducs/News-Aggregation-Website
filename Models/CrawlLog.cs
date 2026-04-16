@@ -1,4 +1,4 @@
-namespace NewsAggregation.Models
+namespace NewsAggregator.Models
 {
     public class CrawlLog
     {
