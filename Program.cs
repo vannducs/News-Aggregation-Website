@@ -1,5 +1,7 @@
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using NewsAggregator.Data;
+using NewsAggregator.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +11,23 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration
     .GetConnectionString("DefaultConnection")));
+
+
+builder.Services.AddHttpClient("crawler", client =>
+{
+    client.DefaultRequestHeaders.Add(
+        "User-Agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+        "AppleWebKit/537.36 (KHTML, like Gecko) " +
+        "Chrome/120.0.0.0 Safari/537.36");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+
+builder.Services.AddScoped<CrawlerService>();
+builder.Services.AddHangfire(config =>
+    config.UseInMemoryStorage());
+builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
@@ -22,10 +41,25 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
-
+app.UseStaticFiles();
 app.UseAuthorization();
-
 app.MapStaticAssets();
+
+
+//Cau hinh middle pipeline
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
+app.UseHangfireDashboard("/hangfire");
+
+RecurringJob.AddOrUpdate<CrawlerService>(
+    "crawl-all-sources",
+    service => service.RunAllAsync(),
+    "*/30 * * * *"
+);
 
 app.MapControllerRoute(
     name: "areas",

@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace NewsAggregator.Models
 {
     public class CrawlLog
     {
+        [Key]
         public int LogID {get;set;}
         public DateTime CrawlTime {get; set;}= DateTime.Now;
         public int ArticleCount {get; set;} =0;

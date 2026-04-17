@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace NewsAggregator.Models
 {
     public class Source
     {
+        [Key]
         public int SourceID {get; set;}
         public string SourceName {get; set;} = string.Empty;
         public string RssUrl {get; set;} = string.Empty;

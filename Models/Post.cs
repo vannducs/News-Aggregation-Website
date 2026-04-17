@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace NewsAggregator.Models
 {
     public class Post
     {
+        [Key]
         public int PostID {get; set;}
         public string Title {get; set;} =string.Empty;
         public string? Abstract {get; set;}

@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace NewsAggregator.Models
 {
     public class Menu
     {
+        [Key]
         public int MenuID {get; set;}
         public string MenuName {get; set;} = string.Empty;
         public bool IsActive {get; set;} = true;

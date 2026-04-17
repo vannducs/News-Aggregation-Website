@@ -15,11 +15,11 @@ namespace NewsAggregator.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Menu>().ToTable("tblTable");
+            modelBuilder.Entity<Menu>().ToTable("tblMenu");
             modelBuilder.Entity<Post>().ToTable("tblPost");
             modelBuilder.Entity<Source>().ToTable("tblSources");
             modelBuilder.Entity<CrawlLog>().ToTable("tblCrawlLogs");
-            modelBuilder.Entity<AISummary>().ToTable("tblAISummary");
+            modelBuilder.Entity<AISummary>().ToTable("tblAISummaries");
             modelBuilder.Entity<Post>().HasIndex(p => p.Link).IsUnique();
             modelBuilder.Entity<AISummary>().HasIndex(a => a.PostID).IsUnique();
         }

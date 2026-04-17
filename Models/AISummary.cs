@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace NewsAggregator.Models
 {
     public class AISummary
     {
+        [Key]
         public int SummaryID {get; set; }
         public int PostID {get; set;}
         public string SummaryText {get; set;} = string.Empty;
