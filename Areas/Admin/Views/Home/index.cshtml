@@ -1,0 +1,144 @@
+@model AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-0">Dashboard</h3>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box text-bg-primary">
+                        <div class="inner">
+                            <h3>@Model.TotalPosts</h3>
+                            <p>Bai viet</p>
+                        </div>
+                        <i class="small-box-icon bi bi-file-earmark-text-fill"></i>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box text-bg-success">
+                        <div class="inner">
+                            <h3>@Model.TotalMenus</h3>
+                            <p>Menu</p>
+                        </div>
+                        <i class="small-box-icon bi bi-menu-button-wide-fill"></i>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box text-bg-warning">
+                        <div class="inner">
+                            <h3>@Model.TotalUsers</h3>
+                            <p>Nguoi dung</p>
+                        </div>
+                        <i class="small-box-icon bi bi-people-fill"></i>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box text-bg-danger">
+                        <div class="inner">
+                            <h3>@Model.TotalComments</h3>
+                            <p>Binh luan</p>
+                        </div>
+                        <i class="small-box-icon bi bi-chat-dots-fill"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-7">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Bai viet moi nhat</h3>
+                        </div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Tieu de</th>
+                                        <th>Chuyen muc</th>
+                                        <th>Tac gia</th>
+                                        <th>Ngay tao</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var post in Model.RecentPosts)
+                                    {
+                                        <tr>
+                                            <td>@post.Title</td>
+                                            <td>@post.Menu?.MenuName</td>
+                                            <td>@post.Author</td>
+                                            <td>@post.CreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3 class="card-title mb-0">Thanh vien gan day</h3>
+                            @if (User.IsInRole(NewsAggregator.Models.UserRoles.Admin))
+                            {
+                                <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="btn btn-sm btn-primary">Mo quan ly user</a>
+                            }
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary mb-3">
+                                Quan ly tai khoan thanh vien, vai tro, trang thai hoat dong va reset mat khau truc tiep tu trang admin.
+                            </p>
+                            @if (User.IsInRole(NewsAggregator.Models.UserRoles.Admin))
+                            {
+                                <a asp-area="Admin" asp-controller="Users" asp-action="Create" class="btn btn-outline-primary">
+                                    <i class="bi bi-person-plus-fill me-1"></i>Them nguoi dung
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-area="" asp-controller="Account" asp-action="Profile" class="btn btn-outline-primary">
+                                    <i class="bi bi-person-circle me-1"></i>Xem ho so cua toi
+                                </a>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Binh luan moi nhat</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                @foreach (var comment in Model.RecentComments)
+                                {
+                                    <li class="list-group-item">
+                                        <div class="fw-semibold">@comment.AuthorName</div>
+                                        <div class="small text-secondary mb-1">@comment.Post?.Title</div>
+                                        <div>@comment.Content</div>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>

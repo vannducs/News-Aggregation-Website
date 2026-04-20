@@ -1,0 +1,132 @@
+@model IEnumerable<Menu>
+@{
+    ViewData["Title"] = "Quan ly menu";
+    var topMenus = Model.Where(m => m.ParentID == 0).OrderBy(m => m.Position).ThenBy(m => m.MenuOrder).ToList();
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6"><h3 class="mb-0">Navigation Menu Management</h3></div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        <li class="breadcrumb-item active">Menu</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="app-content">
+        <div class="container-fluid">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Danh sach menu dieu huong</h3>
+                    <a asp-action="Create" class="btn btn-primary">Them menu</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Ten menu</th>
+                                    <th>Loai</th>
+                                    <th>Link</th>
+                                    <th>Vi tri</th>
+                                    <th>Thu tu</th>
+                                    <th>Trang thai</th>
+                                    <th class="text-end">Tac vu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var menu in topMenus)
+                            {
+                                var children = Model.Where(m => m.ParentID == menu.MenuID).OrderBy(m => m.MenuOrder).ToList();
+                                <tr class="table-light">
+                                    <td class="fw-semibold">@menu.MenuName</td>
+                                    <td>Menu cha</td>
+                                    <td>@(menu.Link ?? $"/{menu.ControllerName}/{menu.ActionName}")</td>
+                                    <td>@(menu.Position == 1 ? "Main Navigation" : "Footer / Secondary")</td>
+                                    <td>@menu.MenuOrder</td>
+                                    <td>
+                                        <span class="badge @(menu.IsActive ? "text-bg-success" : "text-bg-secondary")">
+                                            @(menu.IsActive ? "Dang hien" : "Da an")
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group">
+                                            <form asp-action="MoveUp" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@menu.MenuID" />
+                                                <button type="submit" class="btn btn-sm btn-outline-dark">Len</button>
+                                            </form>
+                                            <form asp-action="MoveDown" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@menu.MenuID" />
+                                                <button type="submit" class="btn btn-sm btn-outline-dark">Xuong</button>
+                                            </form>
+                                            <a asp-action="Edit" asp-route-id="@menu.MenuID" class="btn btn-sm btn-outline-primary">Sua</a>
+                                            <form asp-action="ToggleStatus" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@menu.MenuID" />
+                                                <button type="submit" class="btn btn-sm btn-outline-warning">An/Hien</button>
+                                            </form>
+                                            <form asp-action="Delete" method="post" onsubmit="return confirm('Xoa menu nay?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@menu.MenuID" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Xoa</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                @foreach (var child in children)
+                                {
+                                    <tr>
+                                        <td class="ps-4">↳ @child.MenuName</td>
+                                        <td>Menu con</td>
+                                        <td>@(child.Link ?? $"/{child.ControllerName}/{child.ActionName}")</td>
+                                        <td>@(child.Position == 1 ? "Main Navigation" : "Footer / Secondary")</td>
+                                        <td>@child.MenuOrder</td>
+                                        <td>
+                                            <span class="badge @(child.IsActive ? "text-bg-success" : "text-bg-secondary")">
+                                                @(child.IsActive ? "Dang hien" : "Da an")
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="btn-group">
+                                                <form asp-action="MoveUp" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@child.MenuID" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-dark">Len</button>
+                                                </form>
+                                                <form asp-action="MoveDown" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@child.MenuID" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-dark">Xuong</button>
+                                                </form>
+                                                <a asp-action="Edit" asp-route-id="@child.MenuID" class="btn btn-sm btn-outline-primary">Sua</a>
+                                                <form asp-action="ToggleStatus" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@child.MenuID" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning">An/Hien</button>
+                                                </form>
+                                                <form asp-action="Delete" method="post" onsubmit="return confirm('Xoa menu nay?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@child.MenuID" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Xoa</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>

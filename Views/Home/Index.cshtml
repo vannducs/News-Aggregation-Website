@@ -1,0 +1,139 @@
+@model NewsAggregator.Models.ViewModels.HomeIndexViewModel
+@{
+    ViewData["Title"] = "Trang chu";
+    var heroPost = Model.FeaturedPosts.FirstOrDefault();
+    var secondaryFeatured = Model.FeaturedPosts.Skip(1).ToList();
+}
+
+<section class="featured-posts py-5">
+    <div class="container">
+        @if (heroPost is not null)
+        {
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <article class="post-block-wrapper h-100">
+                        <div class="post-thumbnail mb-3">
+                            <a asp-controller="Posts" asp-action="Details" asp-route-id="@heroPost.PostID">
+                                <img class="img-fluid w-100" src="@(string.IsNullOrWhiteSpace(heroPost.Images) ? "/images/news/news-01.jpg" : heroPost.Images)" alt="@heroPost.Title" />
+                            </a>
+                        </div>
+                        <div class="post-content">
+                            <a class="post-category" asp-controller="Home" asp-action="Category" asp-route-id="@heroPost.MenuID">
+                                @(heroPost.Menu?.MenuName ?? "Tin tuc")
+                            </a>
+                            <h2 class="post-title mt-3">
+                                <a asp-controller="Posts" asp-action="Details" asp-route-id="@heroPost.PostID">@heroPost.Title</a>
+                            </h2>
+                            <div class="post-meta mb-3">
+                                <span class="posted-time"><i class="fa fa-clock-o mr-2"></i>@heroPost.CreatedDate.ToString("dd/MM/yyyy HH:mm")</span>
+                                <span class="post-author">Tac gia: @(heroPost.Author ?? "Ban bien tap")</span>
+                            </div>
+                            <p>@heroPost.Abstract</p>
+                        </div>
+                    </article>
+                </div>
+                <div class="col-lg-4">
+                    @foreach (var post in secondaryFeatured)
+                    {
+                        <article class="post-block-wrapper mb-4">
+                            <div class="post-thumbnail mb-3">
+                                <a asp-controller="Posts" asp-action="Details" asp-route-id="@post.PostID">
+                                    <img class="img-fluid w-100" src="@(string.IsNullOrWhiteSpace(post.Images) ? "/images/news/news-02.jpg" : post.Images)" alt="@post.Title" />
+                                </a>
+                            </div>
+                            <div class="post-content">
+                                <a class="post-category" asp-controller="Home" asp-action="Category" asp-route-id="@post.MenuID">
+                                    @(post.Menu?.MenuName ?? "Tin tuc")
+                                </a>
+                                <h3 class="post-title title-sm mt-2">
+                                    <a asp-controller="Posts" asp-action="Details" asp-route-id="@post.PostID">@post.Title</a>
+                                </h3>
+                                <div class="post-meta">
+                                    <span class="posted-time"><i class="fa fa-clock-o mr-2"></i>@post.CreatedDate.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+<section class="section-padding">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="all-news-block">
+                    <h3 class="news-title"><span>Bai viet moi nhat</span></h3>
+                    <div class="row">
+                        @foreach (var post in Model.LatestPosts)
+                        {
+                            <div class="col-md-6 mb-4">
+                                <article class="post-block-wrapper post-float-half clearfix h-100">
+                                    <div class="post-thumbnail mb-3">
+                                        <a asp-controller="Posts" asp-action="Details" asp-route-id="@post.PostID">
+                                            <img class="img-fluid w-100" src="@(string.IsNullOrWhiteSpace(post.Images) ? "/images/news/news-03.jpg" : post.Images)" alt="@post.Title" />
+                                        </a>
+                                    </div>
+                                    <div class="post-content">
+                                        <a class="post-category" asp-controller="Home" asp-action="Category" asp-route-id="@post.MenuID">
+                                            @(post.Menu?.MenuName ?? "Tin tuc")
+                                        </a>
+                                        <h2 class="post-title mt-3">
+                                            <a asp-controller="Posts" asp-action="Details" asp-route-id="@post.PostID">@post.Title</a>
+                                        </h2>
+                                        <div class="post-meta">
+                                            <span class="posted-time"><i class="fa fa-clock-o mr-2"></i>@post.CreatedDate.ToString("dd/MM/yyyy HH:mm")</span>
+                                            <span class="post-author">Tac gia: @(post.Author ?? "Ban bien tap")</span>
+                                        </div>
+                                        <p class="mt-2">@(string.IsNullOrWhiteSpace(post.Abstract) ? "Xem chi tiet bai viet de doc them noi dung." : post.Abstract)</p>
+                                    </div>
+                                </article>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="sidebar sidebar-right">
+                    <div class="widget">
+                        <h3 class="news-title"><span>Doc nhieu</span></h3>
+                        <div class="post-list-block">
+                            @foreach (var post in Model.PopularPosts)
+                            {
+                                <article class="post-block-wrapper post-float clearfix mb-3">
+                                    <div class="post-thumbnail">
+                                        <a asp-controller="Posts" asp-action="Details" asp-route-id="@post.PostID">
+                                            <img class="img-fluid" src="@(string.IsNullOrWhiteSpace(post.Images) ? "/images/news/news-04.jpg" : post.Images)" alt="@post.Title" />
+                                        </a>
+                                    </div>
+                                    <div class="post-content">
+                                        <h2 class="post-title title-sm">
+                                            <a asp-controller="Posts" asp-action="Details" asp-route-id="@post.PostID">@post.Title</a>
+                                        </h2>
+                                        <div class="post-meta">
+                                            <span class="posted-time"><i class="fa fa-eye mr-2"></i>@post.ViewCount luot xem</span>
+                                        </div>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="widget">
+                        <h3 class="news-title"><span>Chuyen muc</span></h3>
+                        <ul class="list-group">
+                            @foreach (var menu in Model.Menus)
+                            {
+                                <li class="list-group-item">
+                                    <a asp-controller="Home" asp-action="Category" asp-route-id="@menu.MenuID">@menu.MenuName</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
