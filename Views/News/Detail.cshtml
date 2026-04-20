@@ -1,0 +1,249 @@
+@model NewsAggregator.Models.Post
+
+@{
+    ViewData["Title"] = Model.Title;
+    var relatedPosts = ViewBag.RelatedPosts as List<NewsAggregator.Models.Post>
+                       ?? new List<NewsAggregator.Models.Post>();
+}
+
+<section class="single-block-wrapper section-padding">
+    <div class="container">
+        <div class="row">
+
+            @* ===== CỘT CHÍNH — NỘI DUNG BÀI VIẾT ===== *@
+            <div class="col-lg-8 col-md-12 col-sm-12 col-xs-12">
+
+                @* PHẦN HEADER BÀI VIẾT *@
+                <div class="single-post">
+                    <div class="post-header mb-5">
+
+                        @* Danh mục bài viết *@
+                        <a class="post-category"
+                           asp-controller="News"
+                           asp-action="Category"
+                           asp-route-id="@Model.MenuID">
+                            @Model.Menu?.MenuName
+                        </a>
+
+                        @* Tiêu đề *@
+                        <h2 class="post-title">@Model.Title</h2>
+
+                        @* Thông tin meta *@
+                        <div class="post-meta mb-3">
+                            <span class="posted-time">
+                                <i class="fa fa-clock-o mr-2"></i>
+                                @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                            </span>
+                            <span class="post-author ml-3">
+                                by <strong>@Model.Author</strong>
+                            </span>
+                            <span class="ml-3">
+                                <i class="fa fa-eye mr-1"></i>
+                                @Model.ViewCount lượt xem
+                            </span>
+                            @if (Model.Source != null)
+                            {
+                                <span class="ml-3">
+                                    <i class="fa fa-newspaper-o mr-1"></i>
+                                    Nguồn:
+                                    <a href="@Model.Source.WebsiteUrl"
+                                       target="_blank">
+                                        @Model.Source.SourceName
+                                    </a>
+                                </span>
+                            }
+                        </div>
+
+                        @* Tóm tắt bài viết *@
+                        <p>@Model.Abstract</p>
+                    </div>
+
+                    @* PHẦN THÂN BÀI VIẾT *@
+                    <div class="post-body">
+
+                        @* Ảnh đại diện *@
+                        @if (!string.IsNullOrEmpty(Model.Images))
+                        {
+                            <div class="post-featured-image mb-4">
+                                <img src="@Model.Images"
+                                     class="img-fluid"
+                                     alt="@Model.Title">
+                            </div>
+                        }
+
+                        @* Nội dung bài viết
+                           Html.Raw() render HTML thay vì hiển thị thẻ HTML dạng text
+                           Vì Contents chứa HTML từ crawler nên cần Html.Raw() *@
+                        <div class="entry-content">
+                            @if (!string.IsNullOrEmpty(Model.Contents))
+                            {
+                                @Html.Raw(Model.Contents)
+                            }
+                            else
+                            {
+                                @* Nếu không có nội dung đầy đủ thì hiển thị tóm tắt *@
+                                <p>@Model.Abstract</p>
+                                <p>
+                                    <a href="@Model.Link"
+                                       target="_blank"
+                                       class="btn btn-primary">
+                                        Đọc bài đầy đủ tại @Model.Source?.SourceName
+                                        <i class="fa fa-external-link ml-2"></i>
+                                    </a>
+                                </p>
+                            }
+                        </div>
+
+                        @* SHARE + TAGS *@
+                        <div class="share-block d-flex justify-content-between
+                                    align-items-center border-top border-bottom mt-5">
+                            <div class="post-tags">
+                                <span>Danh mục: </span>
+                                <a asp-controller="News"
+                                   asp-action="Category"
+                                   asp-route-id="@Model.MenuID">
+                                    @Model.Menu?.MenuName
+                                </a>
+                            </div>
+                            <ul class="share-icons list-unstyled">
+                                <li class="facebook">
+                                    <a href="https://www.facebook.com/sharer/sharer.php?u=@Model.Link"
+                                       target="_blank">
+                                        <i class="fa fa-facebook"></i>
+                                    </a>
+                                </li>
+                                <li class="twitter">
+                                    <a href="https://twitter.com/intent/tweet?url=@Model.Link&text=@Model.Title"
+                                       target="_blank">
+                                        <i class="fa fa-twitter"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                @* ===== BÀI VIẾT LIÊN QUAN ===== *@
+                @if (relatedPosts.Any())
+                {
+                    <div class="related-posts-block mt-5">
+                        <h3 class="news-title">
+                            <span>Bài viết liên quan</span>
+                        </h3>
+                        <div class="news-style-two-slide">
+                            @foreach (var p in relatedPosts)
+                            {
+                                <div class="item">
+                                    <div class="post-block-wrapper clearfix">
+                                        <div class="post-thumbnail mb-0">
+                                            <a asp-controller="News"
+                                               asp-action="Detail"
+                                               asp-route-id="@p.PostID">
+                                                <img class="img-fluid"
+                                                     src="@(string.IsNullOrEmpty(p.Images)
+                                                        ? "/images/news/news-04.jpg"
+                                                        : p.Images)"
+                                                     alt="@p.Title" />
+                                            </a>
+                                        </div>
+                                        <a class="post-category"
+                                           asp-controller="News"
+                                           asp-action="Category"
+                                           asp-route-id="@p.MenuID">
+                                            @p.Menu?.MenuName
+                                        </a>
+                                        <div class="post-content">
+                                            <h2 class="post-title title-sm">
+                                                <a asp-controller="News"
+                                                   asp-action="Detail"
+                                                   asp-route-id="@p.PostID">
+                                                    @p.Title
+                                                </a>
+                                            </h2>
+                                            <div class="post-meta">
+                                                <span class="posted-time">
+                                                    <i class="fa fa-clock-o mr-1"></i>
+                                                    @p.CreatedDate.ToString("dd/MM/yyyy")
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+            </div>
+
+            @* ===== SIDEBAR PHẢI ===== *@
+            <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+                <div class="sidebar sidebar-right">
+
+                    @* Thông tin nguồn báo *@
+                    @if (Model.Source != null)
+                    {
+                        <div class="widget">
+                            <h3 class="news-title"><span>Nguồn báo</span></h3>
+                            <div class="text-center p-3">
+                                <p>
+                                    <i class="fa fa-newspaper-o mr-2"></i>
+                                    <strong>@Model.Source.SourceName</strong>
+                                </p>
+                                <a href="@Model.Link"
+                                   target="_blank"
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fa fa-external-link mr-1"></i>
+                                    Xem bài gốc
+                                </a>
+                            </div>
+                        </div>
+                    }
+
+                    @* Bài viết liên quan dạng list trong sidebar *@
+                    @if (relatedPosts.Any())
+                    {
+                        <div class="widget">
+                            <h3 class="news-title"><span>Có thể bạn thích</span></h3>
+                            <div class="post-list-block">
+                                @foreach (var p in relatedPosts)
+                                {
+                                    <div class="post-block-wrapper post-float clearfix">
+                                        <div class="post-thumbnail">
+                                            <a asp-controller="News"
+                                               asp-action="Detail"
+                                               asp-route-id="@p.PostID">
+                                                <img class="img-fluid"
+                                                     src="@(string.IsNullOrEmpty(p.Images)
+                                                        ? "/images/news/news-03.jpg"
+                                                        : p.Images)"
+                                                     alt="@p.Title" />
+                                            </a>
+                                        </div>
+                                        <div class="post-content">
+                                            <h2 class="post-title title-sm">
+                                                <a asp-controller="News"
+                                                   asp-action="Detail"
+                                                   asp-route-id="@p.PostID">
+                                                    @p.Title
+                                                </a>
+                                            </h2>
+                                            <div class="post-meta">
+                                                <span class="posted-time">
+                                                    <i class="fa fa-clock-o mr-1"></i>
+                                                    @p.CreatedDate.ToString("dd/MM/yyyy")
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>

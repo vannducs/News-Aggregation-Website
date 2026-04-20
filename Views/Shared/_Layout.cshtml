@@ -11,7 +11,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>NewsBit - News Magazine Newspaper HTML Template</title>
+    <title>@ViewData["Title"] - NewsBit</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   
@@ -26,14 +26,16 @@
     <!-- THEME CSS
 	================================================== -->
     <!-- Bootstrap -->
-    <link rel="stylesheet" href="plugins/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="~/plugins/bootstrap/css/bootstrap.min.css">
     <!-- FontAwesome -->
-    <link rel="stylesheet" href="plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="~/plugins/font-awesome/css/font-awesome.min.css">
     <!-- Slick Carousel -->
-    <link rel="stylesheet" href="plugins/slick-carousel/slick.css">
-    <link rel="stylesheet" href="plugins/slick-carousel/slick-theme.css">
+    <link rel="stylesheet" href="~/plugins/slick-carousel/slick.css">
+    <link rel="stylesheet" href="~/plugins/slick-carousel/slick-theme.css">
     <!-- manin stylesheet -->
     <link rel="stylesheet" href="css/style.css">
+
+    @RenderSection("Styles", required: false)
 </head>
 <body>
 
