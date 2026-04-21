@@ -4,14 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace NewsAggregator.Controllers
 {
-    public class NewsController : Controller
+    public class NewsController : BaseController
     {
-        private readonly AppDbContext _db;
-
-        public NewsController(AppDbContext db)
-        {
-            _db = db;
-        }
+        public NewsController(AppDbContext db) : base(db) {}
         //Lay bai viet
         public async Task<IActionResult> Index()
         {
@@ -55,7 +50,6 @@ namespace NewsAggregator.Controllers
             
             if (post==null) return NotFound();
             ViewData["Title"] = post.Title;
-            //Tăng lượt xem khi có người vào đọc
             post.ViewCount++;
             await _db.SaveChangesAsync();
 

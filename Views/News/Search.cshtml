@@ -1,0 +1,177 @@
+@model List<NewsAggregator.Models.Post>
+
+@{
+    ViewData["Title"] = $"Tìm kiếm: {ViewBag.Keyword}";
+    var keyword = ViewBag.Keyword as string ?? "";
+}
+
+<section class="single-block-wrapper section-padding">
+    <div class="container">
+        <div class="row">
+
+            @* ===== CỘT CHÍNH ===== *@
+            <div class="col-lg-8 col-md-12">
+
+                @* Thanh tìm kiếm *@
+                <div class="mb-4">
+                    <form asp-controller="News"
+                          asp-action="Search"
+                          method="get"
+                          class="d-flex">
+                        <input type="text"
+                               name="q"
+                               value="@keyword"
+                               class="form-control mr-2"
+                               placeholder="Nhập từ khóa...">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-search mr-1"></i> Tìm
+                        </button>
+                    </form>
+                </div>
+
+                @* Tiêu đề kết quả *@
+                @if (!string.IsNullOrEmpty(keyword))
+                {
+                    <h3 class="news-title mb-4">
+                        <span>
+                            Kết quả tìm kiếm: "@keyword"
+                            <small class="text-muted ml-2" style="font-size:14px">
+                                (@Model.Count bài viết)
+                            </small>
+                        </span>
+                    </h3>
+                }
+
+                @* Danh sách kết quả *@
+                @if (!Model.Any())
+                {
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle mr-2"></i>
+                        @if (string.IsNullOrEmpty(keyword))
+                        {
+                            <span>Vui lòng nhập từ khóa để tìm kiếm.</span>
+                        }
+                        else
+                        {
+                            <span>
+                                Không tìm thấy bài viết nào với từ khóa
+                                <strong>"@keyword"</strong>.
+                            </span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    @foreach (var p in Model)
+                    {
+                        <div class="post-block-wrapper post-float clearfix mb-4">
+                            <div class="post-thumbnail">
+                                <a asp-controller="News"
+                                   asp-action="Detail"
+                                   asp-route-id="@p.PostID">
+                                    <img class="img-fluid"
+                                         src="@(string.IsNullOrEmpty(p.Images)
+                                            ? "/images/news/news-01.jpg"
+                                            : p.Images)"
+                                         alt="@p.Title" />
+                                </a>
+                            </div>
+                            <div class="post-content">
+                                <a class="post-category"
+                                   asp-controller="News"
+                                   asp-action="Category"
+                                   asp-route-id="@p.MenuID">
+                                    @p.Menu?.MenuName
+                                </a>
+                                <h2 class="post-title mt-2">
+                                    <a asp-controller="News"
+                                       asp-action="Detail"
+                                       asp-route-id="@p.PostID">
+                                        @p.Title
+                                    </a>
+                                </h2>
+                                <div class="post-meta mb-2">
+                                    <span class="posted-time">
+                                        <i class="fa fa-clock-o mr-2"></i>
+                                        @p.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                                    </span>
+                                    <span class="post-author ml-2">
+                                        by <a href="#">@p.Author</a>
+                                    </span>
+                                    <span class="ml-2">
+                                        <i class="fa fa-newspaper-o mr-1"></i>
+                                        @p.Source?.SourceName
+                                    </span>
+                                </div>
+                                <p>
+                                    @(p.Abstract?.Length > 150
+                                        ? p.Abstract.Substring(0, 150) + "..."
+                                        : p.Abstract)
+                                </p>
+                                <a asp-controller="News"
+                                   asp-action="Detail"
+                                   asp-route-id="@p.PostID"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Đọc tiếp <i class="fa fa-arrow-right ml-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <hr>
+                    }
+                }
+
+            </div>
+
+            @* ===== SIDEBAR ===== *@
+            <div class="col-lg-4 col-md-4 col-sm-12">
+                <div class="sidebar sidebar-right">
+                    <div class="widget">
+                        <h3 class="news-title"><span>Tìm kiếm</span></h3>
+                        <form asp-controller="News"
+                              asp-action="Search"
+                              method="get">
+                            <div class="input-group">
+                                <input type="text"
+                                       name="q"
+                                       class="form-control"
+                                       placeholder="Nhập từ khóa..."
+                                       value="@keyword">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fa fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    @* Gợi ý danh mục *@
+                    @if (ViewBag.Menus != null)
+                    {
+                        <div class="widget">
+                            <h3 class="news-title"><span>Danh mục</span></h3>
+                            <ul class="list-group">
+                                @foreach (var menu in ViewBag.Menus)
+                                {
+                                    if (menu.MenuName != "Trang chủ")
+                                    {
+                                        <li class="list-group-item">
+                                            <a asp-controller="News"
+                                               asp-action="Category"
+                                               asp-route-id="@menu.MenuID">
+                                                <i class="fa fa-angle-right mr-2"></i>
+                                                @menu.MenuName
+                                            </a>
+                                        </li>
+                                    }
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
