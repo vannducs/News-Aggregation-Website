@@ -49,8 +49,6 @@ namespace NewsAggregator.Services
             {
                 var http = _httpClientFactory.CreateClient("crawler");
 
-                // Dùng IndexOf với StringComparison.OrdinalIgnoreCase
-                // thay vì ToLower() để tránh lỗi encoding tiếng Việt
                 INewsCrawler crawler;
 
                 if (source.SourceName.IndexOf("VnExpress",

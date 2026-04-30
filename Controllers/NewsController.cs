@@ -7,7 +7,7 @@ namespace NewsAggregator.Controllers
     public class NewsController : BaseController
     {
         public NewsController(AppDbContext db) : base(db) {}
-        //Lay bai viet
+        
         public async Task<IActionResult> Index()
         {
             ViewData["Title"] = "Trang chủ";
@@ -21,7 +21,6 @@ namespace NewsAggregator.Controllers
             
             return View(posts);
         }
-        //Lay ten danh muc
         public async Task<IActionResult> Category(int id)
         {
             var menu = await _db.Menus.FindAsync(id);
@@ -40,7 +39,6 @@ namespace NewsAggregator.Controllers
 
             return View(posts);
         }
-        //CHi tiet bai viet
         public async Task<IActionResult> Detail(int id)
         {
             var post = await _db.Posts
@@ -62,7 +60,6 @@ namespace NewsAggregator.Controllers
             ViewBag.RelatedPosts = relatedPosts;
             return View(post);
         }
-        //Tìm kiếm bài viết
         public async Task<IActionResult> Search(string q)
         {
             ViewData["Title"] = $"Tìm kiếm: {q}";

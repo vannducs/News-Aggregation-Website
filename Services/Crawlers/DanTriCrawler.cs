@@ -104,13 +104,9 @@ namespace NewsAggregator.Services.Crawlers
                 var htmlDoc = new HtmlDocument();
                 htmlDoc.LoadHtml(html);
 
-                // Selector từ ảnh DevTools bạn chụp:
-                // <div data-slot="content" id="desktop-in-article">
                 var contentNode = htmlDoc.DocumentNode
                     .SelectSingleNode("//div[@data-slot='content']");
 
-                // Selector tác giả từ ảnh DevTools bạn chụp:
-                // <a class="hover:dt-text-black" rel="author">Q.Huy</a>
                 var authorNode = htmlDoc.DocumentNode
                     .SelectSingleNode("//a[@rel='author']");
 
