@@ -166,30 +166,44 @@ namespace NewsAggregator.Data
             if (!await context.Comments.AnyAsync())
             {
                 var firstPost = await context.Posts.OrderBy(p => p.PostID).FirstAsync();
-                var users = await context.AppUsers.Where(u => !u.IsDeleted).ToListAsync();
+                var users = await context.AppUsers
+                    .Where(u => !u.IsDeleted)
+                    .ToListAsync();
 
-                context.Comments.AddRange(
-                    new Comment
+                var firstUser  = users.ElementAtOrDefault(0);
+                var secondUser = users.ElementAtOrDefault(1);
+
+                var comments = new List<Comment>();
+
+                if (firstUser != null)
+                {
+                    comments.Add(new Comment
                     {
-                        PostID = firstPost.PostID,
-                        UserID = users.First().AppUserID,
-                        AuthorName = users.First().FullName,
-                        AuthorEmail = users.First().Email,
-                        Content = "Giao dien template da duoc noi voi du lieu that, co the mo rong tiep phan dang nhap sau.",
+                        PostID    = firstPost.PostID,
+                        UserID    = firstUser.AppUserID,
+                        Content   = "Giao dien template da duoc noi voi du lieu that, co the mo rong tiep phan dang nhap sau.",
                         IsApproved = true,
                         CreatedAt = DateTime.Now.AddHours(-1)
-                    },
-                    new Comment
+                    });
+                }
+
+                if (secondUser != null)
+                {
+                    comments.Add(new Comment
                     {
-                        PostID = firstPost.PostID,
-                        AuthorName = "Doc gia demo",
-                        AuthorEmail = "reader@example.com",
-                        Content = "Phan tim kiem va binh luan duoi bai viet hoat dong tot cho bai demo.",
+                        PostID    = firstPost.PostID,
+                        UserID    = secondUser.AppUserID,
+                        Content   = "Phan tim kiem va binh luan duoi bai viet hoat dong tot cho bai demo.",
                         IsApproved = true,
                         CreatedAt = DateTime.Now.AddMinutes(-30)
                     });
+                }
 
-                await context.SaveChangesAsync();
+                if (comments.Any())
+                {
+                    context.Comments.AddRange(comments);
+                    await context.SaveChangesAsync();
+                }
             }
         }
 

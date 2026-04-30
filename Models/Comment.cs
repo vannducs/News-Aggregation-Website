@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NewsAggregator.Models
 {
     public class Comment
     {
+        [Key]
         public int CommentID { get; set; }
 
         [Required]
@@ -11,12 +13,12 @@ namespace NewsAggregator.Models
 
         public int? UserID { get; set; }
 
-        [Required]
-        [StringLength(100)]
+        // DB dùng cột Content, không có AuthorName riêng
+        // Dùng NotMapped để EF Core bỏ qua cột này
+        [NotMapped]
         public string AuthorName { get; set; } = string.Empty;
 
-        [StringLength(150)]
-        [EmailAddress]
+        [NotMapped]
         public string? AuthorEmail { get; set; }
 
         [Required]
@@ -24,6 +26,8 @@ namespace NewsAggregator.Models
         public string Content { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Column("Status")]
         public bool IsApproved { get; set; } = true;
 
         public Post? Post { get; set; }

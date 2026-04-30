@@ -1,9 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NewsAggregator.Models
 {
     public class AppUser
     {
+        [Key]
+        [Column("UserID")]
         public int AppUserID { get; set; }
 
         [Required]
@@ -17,6 +20,7 @@ namespace NewsAggregator.Models
 
         [Required]
         [StringLength(100)]
+        [Column("Username")]
         public string UserName { get; set; } = string.Empty;
 
         [Required]
@@ -41,8 +45,12 @@ namespace NewsAggregator.Models
         [StringLength(250)]
         public string? AvatarUrl { get; set; }
 
+        [Column("Status")]
         public bool IsActive { get; set; } = true;
+
+        [Column("CreatedDate")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
         public DateTime? LastLoginAt { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
