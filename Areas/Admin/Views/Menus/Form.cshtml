@@ -1,0 +1,85 @@
+@model AdminMenuFormViewModel
+@{
+    var isEdit = Model.MenuID > 0;
+    ViewData["Title"] = isEdit ? "Sua menu" : "Them menu";
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6"><h3 class="mb-0">@(isEdit ? "Sua menu dieu huong" : "Them menu dieu huong")</h3></div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        <li class="breadcrumb-item"><a asp-action="Index">Menu</a></li>
+                        <li class="breadcrumb-item active">@(isEdit ? "Chinh sua" : "Tao moi")</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="app-content">
+        <div class="container-fluid">
+            <div class="card card-primary card-outline">
+                <div class="card-header"><h3 class="card-title mb-0">Thong tin menu</h3></div>
+                <form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.MenuID" method="post">
+                    <div class="card-body">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <input asp-for="MenuID" type="hidden" />
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="MenuName" class="form-label">Ten menu</label>
+                                <input asp-for="MenuName" class="form-control" />
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="ParentID" class="form-label">Menu cha</label>
+                                <select asp-for="ParentID" asp-items="Model.ParentOptions" class="form-select"></select>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Position" class="form-label">Vi tri hien thi</label>
+                                <select asp-for="Position" asp-items="Model.PositionOptions" class="form-select"></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="ControllerName" class="form-label">Controller</label>
+                                <input asp-for="ControllerName" class="form-control" placeholder="Home" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="ActionName" class="form-label">Action</label>
+                                <input asp-for="ActionName" class="form-control" placeholder="Index" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Link" class="form-label">Link tuy chinh</label>
+                                <input asp-for="Link" class="form-control" placeholder="/Home/Category/2" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="MenuOrder" class="form-label">Thu tu</label>
+                                <input asp-for="MenuOrder" class="form-control" />
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsActive" class="form-check-input" />
+                                    <label asp-for="IsActive" class="form-check-label">Dang hien thi</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="alert alert-light border mb-0">
+                                    Neu ban de trong `Link`, he thong se tu tao link tu `Controller/Action` neu co.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-outline-secondary">Quay lai</a>
+                        <button type="submit" class="btn btn-primary">Luu menu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

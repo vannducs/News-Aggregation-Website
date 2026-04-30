@@ -1,0 +1,87 @@
+@model NewsAggregator.Models.ViewModels.ProfileViewModel
+@{
+    ViewData["Title"] = "Ho so";
+}
+
+<section class="section-padding">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                @if (TempData["ProfileMessage"] is string profileMessage)
+                {
+                    <div class="alert alert-success">@profileMessage</div>
+                }
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div>
+                                <h2 class="mb-1">Ho so ca nhan</h2>
+                                <div class="text-muted">@Model.UserName - @Model.Role</div>
+                            </div>
+                            <a asp-action="ChangePassword" class="btn btn-outline-primary">Doi mat khau</a>
+                        </div>
+
+                        <form asp-action="Profile" method="post">
+                            @Html.AntiForgeryToken()
+                            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                            <div class="form-row row">
+                                <div class="form-group col-md-6 mb-3">
+                                    <label asp-for="FullName" class="form-label">Ho ten</label>
+                                    <input asp-for="FullName" class="form-control" />
+                                    <span asp-validation-for="FullName" class="text-danger"></span>
+                                </div>
+                                <div class="form-group col-md-6 mb-3">
+                                    <label asp-for="Email" class="form-label">Email</label>
+                                    <input asp-for="Email" class="form-control" />
+                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="form-row row">
+                                <div class="form-group col-md-6 mb-3">
+                                    <label asp-for="PhoneNumber" class="form-label">So dien thoai</label>
+                                    <input asp-for="PhoneNumber" class="form-control" />
+                                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                                </div>
+                                <div class="form-group col-md-6 mb-3">
+                                    <label asp-for="DateOfBirth" class="form-label">Ngay sinh</label>
+                                    <input asp-for="DateOfBirth" class="form-control" />
+                                    <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label asp-for="Address" class="form-label">Dia chi</label>
+                                <input asp-for="Address" class="form-control" />
+                                <span asp-validation-for="Address" class="text-danger"></span>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label asp-for="AvatarUrl" class="form-label">Avatar URL</label>
+                                <input asp-for="AvatarUrl" class="form-control" />
+                                <span asp-validation-for="AvatarUrl" class="text-danger"></span>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label asp-for="Bio" class="form-label">Gioi thieu</label>
+                                <textarea asp-for="Bio" rows="4" class="form-control"></textarea>
+                                <span asp-validation-for="Bio" class="text-danger"></span>
+                            </div>
+
+                            <div class="row text-muted small mb-4">
+                                <div class="col-md-6">Ngay tao: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                                <div class="col-md-6">Dang nhap gan nhat: @(Model.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chua co")</div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Luu ho so</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -12,16 +12,44 @@ namespace NewsAggregator.Data
         public DbSet<Source> Sources {get; set;}
         public DbSet<CrawlLog> CrawlLogs {get; set;}
         public DbSet<AISummary> AISummaries {get; set;}
+        public DbSet<AppUser> AppUsers { get; set; }
+        public DbSet<Comment> Comments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Tên bảng
             modelBuilder.Entity<Menu>().ToTable("tblMenu");
             modelBuilder.Entity<Post>().ToTable("tblPost");
             modelBuilder.Entity<Source>().ToTable("tblSources");
             modelBuilder.Entity<CrawlLog>().ToTable("tblCrawlLogs");
             modelBuilder.Entity<AISummary>().ToTable("tblAISummaries");
+            modelBuilder.Entity<AppUser>().ToTable("tblUsers");
+            modelBuilder.Entity<Comment>().ToTable("tblComments");
+
+            // Index
             modelBuilder.Entity<Post>().HasIndex(p => p.Link).IsUnique();
             modelBuilder.Entity<AISummary>().HasIndex(a => a.PostID).IsUnique();
+            modelBuilder.Entity<AppUser>().HasIndex(u => u.Email).IsUnique();
+
+            // Relationships
+            modelBuilder.Entity<Post>()
+                .HasOne(p => p.Menu)
+                .WithMany(m => m.Posts)
+                .HasForeignKey(p => p.MenuID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.Post)
+                .WithMany(p => p.Comments)
+                .HasForeignKey(c => c.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.User)
+                .WithMany(u => u.Comments)
+                .HasForeignKey(c => c.UserID)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
+

@@ -24,5 +24,6 @@ namespace NewsAggregator.Models
         public Menu? Menu {get; set;}
         public Source? Source {get; set;}
         public AISummary? AISummary {get; set;}
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     }
 }

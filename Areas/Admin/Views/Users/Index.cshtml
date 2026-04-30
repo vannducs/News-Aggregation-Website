@@ -1,0 +1,273 @@
+@model AdminUserIndexViewModel
+@{
+    ViewData["Title"] = "Quan ly nguoi dung";
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-0">Quan ly nguoi dung</h3>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Nguoi dung</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-content">
+        <div class="container-fluid">
+            @if (TempData["SuccessMessage"] is string message)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @message
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="row mb-4">
+                <div class="col-lg-4 col-12">
+                    <div class="small-box text-bg-primary">
+                        <div class="inner">
+                            <h3>@Model.TotalUsers</h3>
+                            <p>Tong tai khoan</p>
+                        </div>
+                        <i class="small-box-icon bi bi-people-fill"></i>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-12">
+                    <div class="small-box text-bg-success">
+                        <div class="inner">
+                            <h3>@Model.ActiveUsers</h3>
+                            <p>Dang hoat dong</p>
+                        </div>
+                        <i class="small-box-icon bi bi-person-check-fill"></i>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-12">
+                    <div class="small-box text-bg-secondary">
+                        <div class="inner">
+                            <h3>@Model.InactiveUsers</h3>
+                            <p>Da khoa</p>
+                        </div>
+                        <i class="small-box-icon bi bi-person-lock"></i>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-12">
+                    <div class="small-box text-bg-dark">
+                        <div class="inner">
+                            <h3>@Model.DeletedUsers</h3>
+                            <p>Da an</p>
+                        </div>
+                        <i class="small-box-icon bi bi-trash3-fill"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-primary card-outline mb-4">
+                <div class="card-header">
+                    <h3 class="card-title">Bo loc</h3>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label">Tim kiem</label>
+                            <input type="text" name="keyword" value="@Model.Keyword" class="form-control" placeholder="Ho ten, email, ten dang nhap" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Vai tro</label>
+                            <select name="role" class="form-select">
+                                <option value="">Tat ca</option>
+                                @foreach (var role in AdminUserFormViewModel.AvailableRoles)
+                                {
+                                    if (Model.Role == role)
+                                    {
+                                        <option value="@role" selected>@role</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@role">@role</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Trang thai</label>
+                            <select name="isActive" class="form-select">
+                                <option value="">Tat ca</option>
+                                @if (Model.IsActive == true)
+                                {
+                                    <option value="true" selected>Dang hoat dong</option>
+                                }
+                                else
+                                {
+                                    <option value="true">Dang hoat dong</option>
+                                }
+                                @if (Model.IsActive == false)
+                                {
+                                    <option value="false" selected>Da khoa</option>
+                                }
+                                else
+                                {
+                                    <option value="false">Da khoa</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">So dong/trang</label>
+                            <select name="pageSize" class="form-select">
+                                @foreach (var size in new[] { 10, 20, 50 })
+                                {
+                                    if (Model.PageSize == size)
+                                    {
+                                        <option value="@size" selected>@size</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@size">@size</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input type="checkbox" name="includeDeleted" value="true" class="form-check-input" id="includeDeleted" @(Model.IncludeDeleted ? "checked" : null) />
+                                <label class="form-check-label" for="includeDeleted">Hien thi ca tai khoan da an</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Loc</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Xoa loc</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Danh sach nguoi dung</h3>
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i> Them nguoi dung
+                    </a>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Ho ten</th>
+                                <th>Ten dang nhap</th>
+                                <th>Email</th>
+                                <th>Vai tro</th>
+                                <th>Trang thai</th>
+                                <th>Ngay tao</th>
+                                <th class="text-end">Tac vu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Users.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">Khong co nguoi dung phu hop.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var user in Model.Users)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@user.FullName</div>
+                                            @if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
+                                            {
+                                                <div class="small text-muted">@user.PhoneNumber</div>
+                                            }
+                                        </td>
+                                        <td>@user.UserName</td>
+                                        <td>@user.Email</td>
+                                        <td>
+                                            <span class="badge text-bg-info">@user.Role</span>
+                                        </td>
+                                        <td>
+                                            @if (user.IsDeleted)
+                                            {
+                                                <span class="badge text-bg-dark">Da an</span>
+                                            }
+                                            else if (user.IsActive)
+                                            {
+                                                <span class="badge text-bg-success">Hoat dong</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge text-bg-secondary">Da khoa</span>
+                                            }
+                                        </td>
+                                        <td>@user.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td class="text-end">
+                                            <div class="btn-group">
+                                                @if (!user.IsDeleted)
+                                                {
+                                                    <a asp-action="Edit" asp-route-id="@user.AppUserID" class="btn btn-sm btn-outline-primary">Sua</a>
+                                                    <form asp-action="ToggleStatus" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@user.AppUserID" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                            @(user.IsActive ? "Khoa" : "Mo khoa")
+                                                        </button>
+                                                    </form>
+                                                    <form asp-action="ResetPassword" method="post" onsubmit="return confirm('Reset mat khau ve 123456?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@user.AppUserID" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-secondary">Reset MK</button>
+                                                    </form>
+                                                    <form asp-action="Delete" method="post" onsubmit="return confirm('An nguoi dung nay khoi he thong?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@user.AppUserID" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">An</button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <form asp-action="Restore" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@user.AppUserID" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-success">Khoi phuc</button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <span class="text-muted">Trang @Model.CurrentPage / @Model.TotalPages - Tong @Model.TotalRecords ban ghi</span>
+                    <div class="btn-group">
+                        <a asp-action="Index"
+                           asp-route-keyword="@Model.Keyword"
+                           asp-route-role="@Model.Role"
+                           asp-route-isActive="@Model.IsActive"
+                           asp-route-includeDeleted="@Model.IncludeDeleted"
+                           asp-route-pageSize="@Model.PageSize"
+                           asp-route-page="@(Model.CurrentPage - 1)"
+                           class="btn btn-outline-secondary @(Model.CurrentPage <= 1 ? "disabled" : "")">Truoc</a>
+                        <a asp-action="Index"
+                           asp-route-keyword="@Model.Keyword"
+                           asp-route-role="@Model.Role"
+                           asp-route-isActive="@Model.IsActive"
+                           asp-route-includeDeleted="@Model.IncludeDeleted"
+                           asp-route-pageSize="@Model.PageSize"
+                           asp-route-page="@(Model.CurrentPage + 1)"
+                           class="btn btn-outline-secondary @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">Sau</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
