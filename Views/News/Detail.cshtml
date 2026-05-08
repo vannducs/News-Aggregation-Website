@@ -265,79 +265,199 @@
 </section>
 @section Scripts {
 <script>
-    // Lấy nội dung bài viết — gộp tiêu đề + tóm tắt + nội dung
-    function getArticleText() {
-        const title    = document.querySelector('.post-title')?.innerText ?? '';
-        const abstract = document.querySelector('.post-header p')?.innerText ?? '';
-        const content  = document.querySelector('.entry-content')?.innerText ?? '';
+    let audioQueue   = [];
+    let isPlaying    = false;
+    let isStopped    = false;
+    let currentAudio = null; // Track audio đang phát
 
-        // Gộp lại, giới hạn 3000 ký tự tránh đọc quá dài
-        const full = `${title}. ${abstract}. ${content}`;
-        return full.substring(0, 3000);
+    async function startReading() {
+        if (isPlaying) {
+            pauseReading();
+            return;
+        }
+
+        // Dừng audio cũ nếu có
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+        }
+
+        const title      = document.querySelector('.post-title')?.innerText ?? '';
+        const abstract   = document.querySelector('.post-header p')?.innerText ?? '';
+        const paragraphs = document.querySelectorAll('.entry-content p');
+        let contentText  = '';
+        paragraphs.forEach(p => { contentText += p.innerText + ' '; });
+
+        const fullText = `${title}. ${abstract}. ${contentText}`.trim();
+
+        if (!fullText) {
+            setStatus('Không có nội dung!');
+            return;
+        }
+
+        const chunks = splitText(fullText, 300);
+        setStatus(`Đang tạo audio (0/${chunks.length} đoạn)...`);
+        updateButtons('loading');
+        isStopped  = false;
+        audioQueue = [];
+
+        for (let i = 0; i < chunks.length; i++) {
+            if (isStopped) break;
+
+            setStatus(`Đang tạo audio (${i + 1}/${chunks.length} đoạn)...`);
+
+            try {
+                const response = await fetch('/Tts/Speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: chunks[i], voice: 'banmai' })
+                });
+                const data = await response.json();
+                if (data.audioUrl) audioQueue.push(data.audioUrl);
+            } catch (e) {
+                console.log(`[TTS] Lỗi đoạn ${i + 1}: ${e.message}`);
+            }
+        }
+
+        if (audioQueue.length === 0) {
+            setStatus('Lỗi tạo audio!');
+            updateButtons('stopped');
+            return;
+        }
+
+        setStatus('Đang tải audio...');
+        await delay(4000);
+
+        isPlaying = true;
+        updateButtons('playing');
+        await playQueue(0);
     }
 
-    let utterance = null;
-    let isPaused  = false;
-
-    function startReading() {
-        // Nếu đang pause thì resume
-        if (isPaused) {
-            window.speechSynthesis.resume();
-            isPaused = false;
-            updateButtons('playing');
+    // Phát tuần tự — chỉ phát 1 audio tại 1 thời điểm
+    async function playQueue(index) {
+        if (isStopped || index >= audioQueue.length) {
+            if (!isStopped) {
+                isPlaying    = false;
+                currentAudio = null;
+                updateButtons('stopped');
+                setStatus('Đã đọc xong! ✅');
+            }
             return;
         }
 
-        // Dừng nếu đang đọc
-        window.speechSynthesis.cancel();
+        setStatus(`Đang đọc... (${index + 1}/${audioQueue.length})`);
 
-        const text = getArticleText();
-        if (!text) {
-            document.getElementById('tts-status').innerText = 'Không có nội dung!';
-            return;
+        // Dừng audio cũ trước khi tạo mới
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
         }
 
-        utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang  = 'vi-VN';  // Tiếng Việt
-        utterance.rate  = 1.0;      // Tốc độ đọc (0.5 - 2.0)
-        utterance.pitch = 1.0;      // Cao độ (0 - 2)
+        return new Promise((resolve) => {
+            const audio  = new Audio(audioQueue[index]);
+            currentAudio = audio; // Lưu reference audio hiện tại
 
-        // Chọn giọng tiếng Việt nếu có
-        const voices = window.speechSynthesis.getVoices();
-        const viVoice = voices.find(v =>
-            v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam'));
-        if (viVoice) utterance.voice = viVoice;
+            audio.onended = async () => {
+                if (isStopped) { resolve(); return; }
+                currentAudio = null;
+                await delay(300);
+                await playQueue(index + 1);
+                resolve();
+            };
 
-        // Sự kiện khi đọc xong
-        utterance.onend = () => {
-            updateButtons('stopped');
-            document.getElementById('tts-status').innerText = 'Đã đọc xong!';
-        };
+            audio.onerror = async () => {
+                if (isStopped) { resolve(); return; }
+                currentAudio = null;
+                console.log(`[TTS] Lỗi phát đoạn ${index + 1}, thử lại...`);
+                await delay(2000);
+                // Thử lại 1 lần
+                const retry = new Audio(audioQueue[index]);
+                currentAudio = retry;
+                retry.onended = async () => {
+                    currentAudio = null;
+                    await delay(300);
+                    await playQueue(index + 1);
+                    resolve();
+                };
+                retry.onerror = async () => {
+                    currentAudio = null;
+                    await playQueue(index + 1);
+                    resolve();
+                };
+                retry.play().catch(async () => {
+                    currentAudio = null;
+                    await playQueue(index + 1);
+                    resolve();
+                });
+            };
 
-        utterance.onerror = (e) => {
-            updateButtons('stopped');
-            document.getElementById('tts-status').innerText = 'Lỗi đọc bài!';
-        };
+            audio.play().catch(async () => {
+                if (isStopped) { resolve(); return; }
+                currentAudio = null;
+                await delay(2000);
+                await playQueue(index + 1);
+                resolve();
+            });
+        });
+    }
 
-        window.speechSynthesis.speak(utterance);
-        updateButtons('playing');
-        document.getElementById('tts-status').innerText = 'Đang đọc...';
+    function splitText(text, maxLen) {
+        const chunks  = [];
+        let remaining = text.trim();
+
+        while (remaining.length > 0) {
+            if (remaining.length <= maxLen) {
+                chunks.push(remaining);
+                break;
+            }
+
+            let cutAt         = maxLen;
+            const punctuation = ['. ', '! ', '? ', ', ', '; '];
+
+            for (const p of punctuation) {
+                const idx = remaining.lastIndexOf(p, maxLen);
+                if (idx > maxLen * 0.5) {
+                    cutAt = idx + p.length;
+                    break;
+                }
+            }
+
+            chunks.push(remaining.substring(0, cutAt).trim());
+            remaining = remaining.substring(cutAt).trim();
+        }
+
+        return chunks.filter(c => c.length > 0);
     }
 
     function pauseReading() {
-        if (window.speechSynthesis.speaking && !isPaused) {
-            window.speechSynthesis.pause();
-            isPaused = true;
-            updateButtons('paused');
-            document.getElementById('tts-status').innerText = 'Đã tạm dừng';
+        isStopped = true;
+        isPlaying = false;
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
         }
+        updateButtons('stopped');
+        setStatus('Đã dừng — bấm lại để đọc từ đầu');
     }
 
     function stopReading() {
-        window.speechSynthesis.cancel();
-        isPaused = false;
+        isStopped    = true;
+        isPlaying    = false;
+        audioQueue   = [];
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+        }
         updateButtons('stopped');
-        document.getElementById('tts-status').innerText = '';
+        setStatus('');
+    }
+
+    function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function setStatus(msg) {
+        document.getElementById('tts-status').innerText = msg;
     }
 
     function updateButtons(state) {
@@ -345,37 +465,30 @@
         const btnPause = document.getElementById('btn-pause');
         const btnStop  = document.getElementById('btn-stop');
 
-        if (state === 'playing') {
+        if (state === 'loading') {
+            btnPlay.disabled      = true;
+            btnPlay.innerHTML     = '<i class="fa fa-spinner fa-spin mr-1"></i> Đang tải...';
+            btnStop.style.display = 'inline-block';
+        } else if (state === 'playing') {
             btnPlay.style.display  = 'none';
+            btnPlay.disabled       = false;
             btnPause.style.display = 'inline-block';
             btnStop.style.display  = 'inline-block';
         } else if (state === 'paused') {
             btnPlay.innerHTML      = '<i class="fa fa-play mr-1"></i> Tiếp tục';
             btnPlay.style.display  = 'inline-block';
+            btnPlay.disabled       = false;
             btnPause.style.display = 'none';
             btnStop.style.display  = 'inline-block';
         } else {
             btnPlay.innerHTML      = '<i class="fa fa-volume-up mr-1"></i> Đọc bài viết';
             btnPlay.style.display  = 'inline-block';
+            btnPlay.disabled       = false;
             btnPause.style.display = 'none';
             btnStop.style.display  = 'none';
         }
     }
 
-    // Load voices khi trang mở
-    window.speechSynthesis.onvoiceschanged = () => {
-        const voices = window.speechSynthesis.getVoices();
-        const viVoice = voices.find(v =>
-            v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam'));
-        if (viVoice) {
-            document.getElementById('tts-status').innerText = 
-                `Giọng: ${viVoice.name}`;
-        }
-    };
-
-    // Dừng đọc khi chuyển trang
-    window.addEventListener('beforeunload', () => {
-        window.speechSynthesis.cancel();
-    });
+    window.addEventListener('beforeunload', stopReading);
 </script>
 }
