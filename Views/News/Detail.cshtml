@@ -265,10 +265,9 @@
 </section>
 @section Scripts {
 <script>
-    let audioQueue   = [];
-    let isPlaying    = false;
-    let isStopped    = false;
-    let currentAudio = null; // Track audio đang phát
+    let audioQueue = [];
+    let isPlaying  = false;
+    let isStopped  = false;
 
     async function startReading() {
         if (isPlaying) {
@@ -276,14 +275,10 @@
             return;
         }
 
-        // Dừng audio cũ nếu có
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio = null;
-        }
+        // Lấy nội dung bài viết — bỏ qua ảnh
+        const title    = document.querySelector('.post-title')?.innerText ?? '';
+        const abstract = document.querySelector('.post-header p')?.innerText ?? '';
 
-        const title      = document.querySelector('.post-title')?.innerText ?? '';
-        const abstract   = document.querySelector('.post-header p')?.innerText ?? '';
         const paragraphs = document.querySelectorAll('.entry-content p');
         let contentText  = '';
         paragraphs.forEach(p => { contentText += p.innerText + ' '; });
@@ -295,12 +290,14 @@
             return;
         }
 
+        // Chia bài thành các đoạn 300 ký tự
         const chunks = splitText(fullText, 300);
         setStatus(`Đang tạo audio (0/${chunks.length} đoạn)...`);
         updateButtons('loading');
         isStopped  = false;
         audioQueue = [];
 
+        // Tạo audio cho từng đoạn
         for (let i = 0; i < chunks.length; i++) {
             if (isStopped) break;
 
@@ -325,75 +322,48 @@
             return;
         }
 
+        // Chờ FPT AI xử lý tất cả đoạn
         setStatus('Đang tải audio...');
         await delay(4000);
 
+        // Phát lần lượt từng đoạn
         isPlaying = true;
         updateButtons('playing');
         await playQueue(0);
     }
 
-    // Phát tuần tự — chỉ phát 1 audio tại 1 thời điểm
+    // Phát từng đoạn trong hàng đợi
     async function playQueue(index) {
         if (isStopped || index >= audioQueue.length) {
             if (!isStopped) {
-                isPlaying    = false;
-                currentAudio = null;
+                isPlaying = false;
                 updateButtons('stopped');
-                setStatus('Đã đọc xong! ✅');
+                setStatus('Đã đọc xong! ');
             }
             return;
         }
 
         setStatus(`Đang đọc... (${index + 1}/${audioQueue.length})`);
 
-        // Dừng audio cũ trước khi tạo mới
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio = null;
-        }
-
         return new Promise((resolve) => {
-            const audio  = new Audio(audioQueue[index]);
-            currentAudio = audio; // Lưu reference audio hiện tại
+            const audio = new Audio(audioQueue[index]);
 
             audio.onended = async () => {
-                if (isStopped) { resolve(); return; }
-                currentAudio = null;
                 await delay(300);
                 await playQueue(index + 1);
                 resolve();
             };
 
             audio.onerror = async () => {
-                if (isStopped) { resolve(); return; }
-                currentAudio = null;
-                console.log(`[TTS] Lỗi phát đoạn ${index + 1}, thử lại...`);
                 await delay(2000);
-                // Thử lại 1 lần
-                const retry = new Audio(audioQueue[index]);
-                currentAudio = retry;
-                retry.onended = async () => {
-                    currentAudio = null;
-                    await delay(300);
-                    await playQueue(index + 1);
-                    resolve();
-                };
-                retry.onerror = async () => {
-                    currentAudio = null;
-                    await playQueue(index + 1);
-                    resolve();
-                };
-                retry.play().catch(async () => {
-                    currentAudio = null;
+                audio.load();
+                audio.play().catch(async () => {
                     await playQueue(index + 1);
                     resolve();
                 });
             };
 
             audio.play().catch(async () => {
-                if (isStopped) { resolve(); return; }
-                currentAudio = null;
                 await delay(2000);
                 await playQueue(index + 1);
                 resolve();
@@ -401,9 +371,11 @@
         });
     }
 
+    // Chia text thành các đoạn không quá maxLen ký tự
+    // Cắt tại dấu câu để nghe tự nhiên hơn
     function splitText(text, maxLen) {
-        const chunks  = [];
-        let remaining = text.trim();
+        const chunks    = [];
+        let remaining   = text.trim();
 
         while (remaining.length > 0) {
             if (remaining.length <= maxLen) {
@@ -411,8 +383,8 @@
                 break;
             }
 
-            let cutAt         = maxLen;
-            const punctuation = ['. ', '! ', '? ', ', ', '; '];
+            let cutAt           = maxLen;
+            const punctuation   = ['. ', '! ', '? ', ', ', '; '];
 
             for (const p of punctuation) {
                 const idx = remaining.lastIndexOf(p, maxLen);
@@ -432,22 +404,14 @@
     function pauseReading() {
         isStopped = true;
         isPlaying = false;
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio = null;
-        }
         updateButtons('stopped');
         setStatus('Đã dừng — bấm lại để đọc từ đầu');
     }
 
     function stopReading() {
-        isStopped    = true;
-        isPlaying    = false;
-        audioQueue   = [];
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio = null;
-        }
+        isStopped  = true;
+        isPlaying  = false;
+        audioQueue = [];
         updateButtons('stopped');
         setStatus('');
     }
@@ -489,6 +453,7 @@
         }
     }
 
+    // Dừng audio khi chuyển trang
     window.addEventListener('beforeunload', stopReading);
 </script>
 }

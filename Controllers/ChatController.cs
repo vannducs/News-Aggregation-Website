@@ -15,7 +15,6 @@ namespace NewsAggregator.Controllers
             _http = factory.CreateClient();
         }
 
-        // POST: /Chat/Ask
         [HttpPost]
         public async Task<IActionResult> Ask([FromBody] ChatRequest request)
         {
@@ -26,8 +25,6 @@ namespace NewsAggregator.Controllers
             {
                 var apiKey = _config["GroqApiKey"];
                 var url = "https://api.groq.com/openai/v1/chat/completions";
-
-                // Ghép context bài viết vào message nếu có
                 var fullMessage = string.IsNullOrEmpty(request.Context)
                     ? request.Message
                     : $"Dựa trên bài viết sau:\n{request.Context}\n\nCâu hỏi: {request.Message}";

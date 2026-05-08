@@ -488,3 +488,5 @@ $RECYCLE.BIN/
 #ignore appsetting
 appsettings.Development.json
 appsettings.json
+
+temp-build-auth-check/
