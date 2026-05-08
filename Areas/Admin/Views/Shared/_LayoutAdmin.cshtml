@@ -89,6 +89,17 @@
                                 </a>
                             </li>
                         }
+                        @if (User.IsInRole(NewsAggregator.Models.UserRoles.Admin) ||
+                            User.IsInRole(NewsAggregator.Models.UserRoles.Editor))
+                        {
+                            <li class="nav-item">
+                                <a asp-area="Admin" asp-controller="Source" asp-action="Index"
+                                class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Source" ? "active" : "")">
+                                    <i class="nav-icon bi bi-rss-fill"></i>
+                                    <p>Quản lý nguồn báo</p>
+                                </a>
+                            </li>
+                        }
 
                         @if (User.IsInRole(NewsAggregator.Models.UserRoles.Admin) ||
                              User.IsInRole(NewsAggregator.Models.UserRoles.Editor))

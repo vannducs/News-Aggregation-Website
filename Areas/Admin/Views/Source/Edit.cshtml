@@ -1,0 +1,108 @@
+@model NewsAggregator.Models.Source
+@{
+    ViewData["Title"] = "Sửa nguồn báo";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-0">Sửa nguồn báo</h3>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item">
+                            <a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a asp-area="Admin" asp-controller="Source" asp-action="Index">
+                                Nguồn báo
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active">Sửa</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                Chỉnh sửa: <strong>@Model.SourceName</strong>
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <form asp-area="Admin" asp-controller="Source"
+                                  asp-action="Edit" asp-route-id="@Model.SourceID"
+                                  method="post">
+                                @Html.AntiForgeryToken()
+
+                                <input asp-for="SourceID" type="hidden" />
+
+                                <div class="mb-3">
+                                    <label asp-for="SourceName" class="form-label fw-semibold">
+                                        Tên nguồn báo <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="SourceName" class="form-control">
+                                    <span asp-validation-for="SourceName" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="RssUrl" class="form-label fw-semibold">
+                                        RSS Feed URL <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="RssUrl" class="form-control">
+                                    <span asp-validation-for="RssUrl" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="WebsiteUrl" class="form-label fw-semibold">
+                                        Website URL
+                                    </label>
+                                    <input asp-for="WebsiteUrl" class="form-control">
+                                    <span asp-validation-for="WebsiteUrl" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="LogoUrl" class="form-label fw-semibold">
+                                        Logo URL
+                                    </label>
+                                    <input asp-for="LogoUrl" class="form-control">
+                                    <span asp-validation-for="LogoUrl" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="IsActive" class="form-check-input"
+                                               type="checkbox" role="switch">
+                                        <label asp-for="IsActive" class="form-check-label">
+                                            Đang crawl
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-1"></i>Lưu thay đổi
+                                    </button>
+                                    <a asp-area="Admin" asp-controller="Source"
+                                       asp-action="Index" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left me-1"></i>Quay lại
+                                    </a>
+                                </div>
+
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>

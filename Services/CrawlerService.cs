@@ -97,5 +97,15 @@ namespace NewsAggregator.Services
                 await _db.SaveChangesAsync();
             }
         }
+        // Crawl chỉ 1 nguồn theo ID — dùng cho nút CrawlNow
+        public async Task CrawlSourceByIdAsync(int sourceId)
+        {
+            var source = await _db.Sources.FindAsync(sourceId);
+            if (source == null || !source.IsActive) return;
+
+            Console.WriteLine($"[CrawlNow] Bắt đầu crawl {source.SourceName}");
+            await CrawlSourceAsync(source);
+            Console.WriteLine($"[CrawlNow] Hoàn thành crawl {source.SourceName}");
+        }
     }
 }

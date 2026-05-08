@@ -30,6 +30,22 @@
 
                         @* Thông tin meta *@
                         <div class="post-meta mb-3">
+                            @* Nút TTS *@
+                            <div class="tts-controls mt-3 mb-3">
+                                <button id="btn-play" onclick="startReading()" class="btn btn-primary btn-sm">
+                                    <i class="fa fa-volume-up mr-1"></i> Đọc bài viết
+                                </button>
+                                <button id="btn-pause" onclick="pauseReading()"
+                                        class="btn btn-warning btn-sm" style="display:none">
+                                    <i class="fa fa-pause mr-1"></i> Tạm dừng
+                                </button>
+                                <button id="btn-stop" onclick="stopReading()"
+                                        class="btn btn-secondary btn-sm" style="display:none">
+                                    <i class="fa fa-stop mr-1"></i> Dừng
+                                </button>
+                                <span id="tts-status" class="text-muted ml-2" style="font-size:13px"></span>
+                            </div>
+
                             <span class="posted-time">
                                 <i class="fa fa-clock-o mr-2"></i>
                                 @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")
@@ -247,3 +263,119 @@
         </div>
     </div>
 </section>
+@section Scripts {
+<script>
+    // Lấy nội dung bài viết — gộp tiêu đề + tóm tắt + nội dung
+    function getArticleText() {
+        const title    = document.querySelector('.post-title')?.innerText ?? '';
+        const abstract = document.querySelector('.post-header p')?.innerText ?? '';
+        const content  = document.querySelector('.entry-content')?.innerText ?? '';
+
+        // Gộp lại, giới hạn 3000 ký tự tránh đọc quá dài
+        const full = `${title}. ${abstract}. ${content}`;
+        return full.substring(0, 3000);
+    }
+
+    let utterance = null;
+    let isPaused  = false;
+
+    function startReading() {
+        // Nếu đang pause thì resume
+        if (isPaused) {
+            window.speechSynthesis.resume();
+            isPaused = false;
+            updateButtons('playing');
+            return;
+        }
+
+        // Dừng nếu đang đọc
+        window.speechSynthesis.cancel();
+
+        const text = getArticleText();
+        if (!text) {
+            document.getElementById('tts-status').innerText = 'Không có nội dung!';
+            return;
+        }
+
+        utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang  = 'vi-VN';  // Tiếng Việt
+        utterance.rate  = 1.0;      // Tốc độ đọc (0.5 - 2.0)
+        utterance.pitch = 1.0;      // Cao độ (0 - 2)
+
+        // Chọn giọng tiếng Việt nếu có
+        const voices = window.speechSynthesis.getVoices();
+        const viVoice = voices.find(v =>
+            v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam'));
+        if (viVoice) utterance.voice = viVoice;
+
+        // Sự kiện khi đọc xong
+        utterance.onend = () => {
+            updateButtons('stopped');
+            document.getElementById('tts-status').innerText = 'Đã đọc xong!';
+        };
+
+        utterance.onerror = (e) => {
+            updateButtons('stopped');
+            document.getElementById('tts-status').innerText = 'Lỗi đọc bài!';
+        };
+
+        window.speechSynthesis.speak(utterance);
+        updateButtons('playing');
+        document.getElementById('tts-status').innerText = 'Đang đọc...';
+    }
+
+    function pauseReading() {
+        if (window.speechSynthesis.speaking && !isPaused) {
+            window.speechSynthesis.pause();
+            isPaused = true;
+            updateButtons('paused');
+            document.getElementById('tts-status').innerText = 'Đã tạm dừng';
+        }
+    }
+
+    function stopReading() {
+        window.speechSynthesis.cancel();
+        isPaused = false;
+        updateButtons('stopped');
+        document.getElementById('tts-status').innerText = '';
+    }
+
+    function updateButtons(state) {
+        const btnPlay  = document.getElementById('btn-play');
+        const btnPause = document.getElementById('btn-pause');
+        const btnStop  = document.getElementById('btn-stop');
+
+        if (state === 'playing') {
+            btnPlay.style.display  = 'none';
+            btnPause.style.display = 'inline-block';
+            btnStop.style.display  = 'inline-block';
+        } else if (state === 'paused') {
+            btnPlay.innerHTML      = '<i class="fa fa-play mr-1"></i> Tiếp tục';
+            btnPlay.style.display  = 'inline-block';
+            btnPause.style.display = 'none';
+            btnStop.style.display  = 'inline-block';
+        } else {
+            btnPlay.innerHTML      = '<i class="fa fa-volume-up mr-1"></i> Đọc bài viết';
+            btnPlay.style.display  = 'inline-block';
+            btnPause.style.display = 'none';
+            btnStop.style.display  = 'none';
+        }
+    }
+
+    // Load voices khi trang mở
+    window.speechSynthesis.onvoiceschanged = () => {
+        const voices = window.speechSynthesis.getVoices();
+        const viVoice = voices.find(v =>
+            v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam'));
+        if (viVoice) {
+            document.getElementById('tts-status').innerText = 
+                `Giọng: ${viVoice.name}`;
+        }
+    };
+
+    // Dừng đọc khi chuyển trang
+    window.addEventListener('beforeunload', () => {
+        window.speechSynthesis.cancel();
+    });
+</script>
+}

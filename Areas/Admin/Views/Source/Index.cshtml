@@ -1,0 +1,164 @@
+@model List<NewsAggregator.Models.Source>
+@{
+    ViewData["Title"] = "Quản lý nguồn báo";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-0">Quản lý nguồn báo</h3>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item">
+                            <a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a>
+                        </li>
+                        <li class="breadcrumb-item active">Nguồn báo</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-content">
+        <div class="container-fluid">
+
+            @* Thông báo thành công *@
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        Danh sách nguồn báo
+                        <span class="badge bg-primary ms-2">@Model.Count</span>
+                    </h3>
+                    <a asp-area="Admin" asp-controller="Source" asp-action="Create"
+                       class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i>Thêm nguồn mới
+                    </a>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tên nguồn báo</th>
+                                <th>RSS URL</th>
+                                <th>Website</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var source in Model)
+                            {
+                                <tr>
+                                    <td>@source.SourceID</td>
+                                    <td>
+                                        <strong>@source.SourceName</strong>
+                                        @if (!string.IsNullOrEmpty(source.LogoUrl))
+                                        {
+                                            <img src="@source.LogoUrl"
+                                                 alt="@source.SourceName"
+                                                 class="ms-2"
+                                                 style="height:20px">
+                                        }
+                                    </td>
+                                    <td>
+                                        <a href="@source.RssUrl" target="_blank"
+                                           class="text-truncate d-inline-block"
+                                           style="max-width:200px">
+                                            @source.RssUrl
+                                        </a>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(source.WebsiteUrl))
+                                        {
+                                            <a href="@source.WebsiteUrl" target="_blank">
+                                                @source.WebsiteUrl
+                                            </a>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (source.IsActive)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-circle-fill me-1"></i>Đang crawl
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-circle me-1"></i>Tạm dừng
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            @* Nút sửa *@
+                                            <a asp-area="Admin" asp-controller="Source"
+                                               asp-action="Edit" asp-route-id="@source.SourceID"
+                                               class="btn btn-warning btn-sm">
+                                                <i class="bi bi-pencil-fill"></i>
+                                            </a>
+
+                                            @* Nút bật/tắt crawl *@
+                                            <form asp-area="Admin" asp-controller="Source"
+                                                  asp-action="ToggleActive"
+                                                  asp-route-id="@source.SourceID"
+                                                  method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="btn btn-sm @(source.IsActive ? "btn-secondary" : "btn-success")"
+                                                        title="@(source.IsActive ? "Tắt crawl" : "Bật crawl")">
+                                                    <i class="bi @(source.IsActive ? "bi-pause-fill" : "bi-play-fill")"></i>
+                                                </button>
+                                            </form>
+
+                                            @* Nút crawl ngay *@
+                                            <form asp-area="Admin" asp-controller="Source"
+                                                  asp-action="CrawlNow"
+                                                  asp-route-id="@source.SourceID"
+                                                  method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="btn btn-info btn-sm"
+                                                        title="Crawl ngay">
+                                                    <i class="bi bi-arrow-clockwise"></i>
+                                                </button>
+                                            </form>
+
+                                            @* Nút xóa *@
+                                            <form asp-area="Admin" asp-controller="Source"
+                                                  asp-action="Delete"
+                                                  asp-route-id="@source.SourceID"
+                                                  method="post" class="d-inline"
+                                                  onsubmit="return confirm('Xóa nguồn @source.SourceName?')">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-danger btn-sm"
+                                                        title="Xóa">
+                                                    <i class="bi bi-trash-fill"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
