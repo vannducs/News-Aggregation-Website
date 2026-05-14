@@ -44,18 +44,24 @@
                         @* Thông tin meta *@
                         <div class="post-meta mb-3">
                             @* Nút lưu bài viết *@
-                            @if (User.Identity?.IsAuthenticated == true)
-                            {
-                                <div class="mb-2">
+                            <div class="mb-2">
+                                @if (User.Identity?.IsAuthenticated == true)
+                                {
                                     <button id="btn-save-post"
                                             class="btn btn-sm @(isSaved ? "btn-warning" : "btn-outline-warning")"
                                             onclick="toggleSave(@Model.PostID)">
                                         <i class="fa @(isSaved ? "fa-bookmark" : "fa-bookmark-o") mr-1"></i>
                                         @(isSaved ? "Đã lưu" : "Lưu bài viết")
                                     </button>
-                                    <span id="save-msg" class="ml-2 text-muted small"></span>
-                                </div>
-                            }
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-warning" onclick="showLoginModal()">
+                                        <i class="fa fa-bookmark-o mr-1"></i> Lưu bài viết
+                                    </button>
+                                }
+                                <span id="save-msg" class="ml-2 text-muted small"></span>
+                            </div>
 
                             @* Nút TTS *@
                             <div class="tts-controls mt-3 mb-3">
@@ -155,6 +161,69 @@
                                 </li>
                             </ul>
                         </div>
+                    </div>
+                </div>
+
+                @* ===== KHU VỰC BÌNH LUẬN ===== *@
+                @{
+                    var comments = ViewBag.Comments as List<NewsAggregator.Models.Comment>
+                                   ?? new List<NewsAggregator.Models.Comment>();
+                }
+                <div class="comment-section mt-5 mb-4">
+                    <h3 class="news-title"><span>Bình luận (@comments.Count)</span></h3>
+
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="comment-form-wrapper mb-4">
+                            <form id="comment-form">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="postId" value="@Model.PostID" />
+                                <div class="form-group">
+                                    <textarea id="comment-content" name="content" class="form-control"
+                                              rows="3" placeholder="Nhập bình luận của bạn..." maxlength="1000"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm mt-2">
+                                    <i class="fa fa-paper-plane mr-1"></i> Gửi bình luận
+                                </button>
+                                <span id="comment-msg" class="ml-2 text-muted small"></span>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="login-prompt-box p-3 mb-4 rounded border text-center" style="background:#f8f9fa;">
+                            <i class="fa fa-lock fa-2x text-muted mb-2 d-block"></i>
+                            <p class="mb-2 text-muted">Bạn cần đăng nhập để bình luận.</p>
+                            <a asp-controller="Account" asp-action="Login"
+                               asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)"
+                               class="btn btn-primary btn-sm">
+                                <i class="fa fa-sign-in mr-1"></i> Đăng nhập để bình luận
+                            </a>
+                        </div>
+                    }
+
+                    <div id="comments-list">
+                        @if (comments.Count == 0)
+                        {
+                            <p class="text-muted small" id="no-comments-msg">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+                        }
+                        @foreach (var c in comments)
+                        {
+                            <div class="comment-item py-3 border-bottom">
+                                <div class="d-flex align-items-start">
+                                    <div class="comment-avatar mr-3 pt-1">
+                                        <i class="fa fa-user-circle fa-2x text-secondary"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <strong class="text-dark">@(c.User?.FullName ?? "Người dùng")</strong>
+                                            <small class="text-muted">@c.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                        </div>
+                                        <p class="mb-0">@c.Content</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
 
@@ -367,8 +436,31 @@
 
     .source-logo img { opacity: 0.85; }
     .source-logo img:hover { opacity: 1; }
+
+    /* ===== Comment section ===== */
+    .comment-section .news-title { margin-bottom: 1rem; }
+    .comment-item:last-child { border-bottom: none !important; }
+    .comment-avatar { flex-shrink: 0; }
+    .login-prompt-box { border-color: #dee2e6 !important; }
 </style>
 }
+@* Modal yêu cầu đăng nhập *@
+<div class="modal fade" id="loginRequiredModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4 px-3">
+                <i class="fa fa-lock fa-3x text-muted mb-3 d-block"></i>
+                <h5 class="mb-2">Yêu cầu đăng nhập</h5>
+                <p class="text-muted mb-3 small">Bạn cần đăng nhập để sử dụng tính năng này.</p>
+                <a id="modal-login-btn" href="#" class="btn btn-primary btn-sm mr-2">
+                    <i class="fa fa-sign-in mr-1"></i> Đăng nhập
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
     // --- State ---
@@ -656,6 +748,76 @@
         }
         btn.disabled = false;
         setTimeout(() => msg.textContent = '', 3000);
+    }
+
+    // --- Login modal ---
+    function showLoginModal() {
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        document.getElementById('modal-login-btn').href = '/Account/Login?returnUrl=' + returnUrl;
+        $('#loginRequiredModal').modal('show');
+    }
+
+    // --- Comment form ---
+    function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    const commentForm = document.getElementById('comment-form');
+    if (commentForm) {
+        commentForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const content = document.getElementById('comment-content').value.trim();
+            const msg     = document.getElementById('comment-msg');
+            const btn     = commentForm.querySelector('button[type="submit"]');
+            const token   = commentForm.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+            const postId  = commentForm.querySelector('input[name="postId"]')?.value;
+
+            if (!content) { msg.textContent = 'Vui lòng nhập bình luận!'; return; }
+
+            btn.disabled = true;
+            msg.textContent = 'Đang gửi...';
+
+            try {
+                const res  = await fetch('/Comment/Submit', {
+                    method : 'POST',
+                    headers: {
+                        'Content-Type'            : 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `postId=${postId}&content=${encodeURIComponent(content)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+                });
+                const data = await res.json();
+                msg.textContent = data.message;
+
+                if (data.success) {
+                    document.getElementById('comment-content').value = '';
+                    const noMsg = document.getElementById('no-comments-msg');
+                    if (noMsg) noMsg.remove();
+
+                    const list       = document.getElementById('comments-list');
+                    const newComment = document.createElement('div');
+                    newComment.className = 'comment-item py-3 border-bottom';
+                    newComment.innerHTML = `
+                        <div class="d-flex align-items-start">
+                            <div class="comment-avatar mr-3 pt-1">
+                                <i class="fa fa-user-circle fa-2x text-secondary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">${escapeHtml(data.comment.authorName)}</strong>
+                                    <small class="text-muted">${escapeHtml(data.comment.createdAt)}</small>
+                                </div>
+                                <p class="mb-0">${escapeHtml(data.comment.content)}</p>
+                            </div>
+                        </div>`;
+                    list.insertBefore(newComment, list.firstChild);
+                    setTimeout(() => msg.textContent = '', 3000);
+                }
+            } catch (ex) {
+                msg.textContent = 'Lỗi kết nối!';
+            }
+            btn.disabled = false;
+        });
     }
 </script>
 }

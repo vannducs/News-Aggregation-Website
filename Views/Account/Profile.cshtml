@@ -1,82 +1,108 @@
 @model NewsAggregator.Models.ViewModels.ProfileViewModel
 @{
-    ViewData["Title"] = "Ho so";
+    ViewData["Title"] = "Hồ sơ cá nhân";
 }
 
 <section class="section-padding">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
+        <div class="row">
+
+            @* ===== SIDEBAR TRÁI ===== *@
+            <div class="col-lg-3 col-md-4 mb-4">
+                <partial name="_ProfileSidebar" />
+            </div>
+
+            @* ===== NỘI DUNG CHÍNH ===== *@
+            <div class="col-lg-9 col-md-8">
+
                 @if (TempData["ProfileMessage"] is string profileMessage)
                 {
-                    <div class="alert alert-success">@profileMessage</div>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fa fa-check-circle mr-2"></i>@profileMessage
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    </div>
                 }
 
                 <div class="card border-0 shadow-sm">
                     <div class="card-body p-4">
+
                         <div class="d-flex justify-content-between align-items-start mb-4">
                             <div>
-                                <h2 class="mb-1">Ho so ca nhan</h2>
-                                <div class="text-muted">@Model.UserName - @Model.Role</div>
+                                <h4 class="mb-1 font-weight-bold">Thông tin cá nhân</h4>
+                                <div class="text-muted small">@Model.UserName &mdash; @Model.Role</div>
                             </div>
-                            <a asp-action="ChangePassword" class="btn btn-outline-primary">Doi mat khau</a>
+                            <a asp-action="ChangePassword" class="btn btn-outline-secondary btn-sm">
+                                <i class="fa fa-lock mr-1"></i>Đổi mật khẩu
+                            </a>
                         </div>
 
                         <form asp-action="Profile" method="post">
                             @Html.AntiForgeryToken()
-                            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
                             <div class="form-row row">
                                 <div class="form-group col-md-6 mb-3">
-                                    <label asp-for="FullName" class="form-label">Ho ten</label>
-                                    <input asp-for="FullName" class="form-control" />
-                                    <span asp-validation-for="FullName" class="text-danger"></span>
+                                    <label asp-for="FullName" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                                    <input asp-for="FullName" class="form-control" placeholder="Nhập họ và tên" />
+                                    <span asp-validation-for="FullName" class="text-danger small"></span>
                                 </div>
                                 <div class="form-group col-md-6 mb-3">
-                                    <label asp-for="Email" class="form-label">Email</label>
-                                    <input asp-for="Email" class="form-control" />
-                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                    <label asp-for="Email" class="form-label">Email <span class="text-danger">*</span></label>
+                                    <input asp-for="Email" class="form-control" placeholder="email@example.com" />
+                                    <span asp-validation-for="Email" class="text-danger small"></span>
                                 </div>
                             </div>
 
                             <div class="form-row row">
                                 <div class="form-group col-md-6 mb-3">
-                                    <label asp-for="PhoneNumber" class="form-label">So dien thoai</label>
-                                    <input asp-for="PhoneNumber" class="form-control" />
-                                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                                    <label asp-for="PhoneNumber" class="form-label">Số điện thoại</label>
+                                    <input asp-for="PhoneNumber" class="form-control" placeholder="0xxxxxxxxx" />
+                                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                                 </div>
                                 <div class="form-group col-md-6 mb-3">
-                                    <label asp-for="DateOfBirth" class="form-label">Ngay sinh</label>
-                                    <input asp-for="DateOfBirth" class="form-control" />
-                                    <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                                    <label asp-for="DateOfBirth" class="form-label">Ngày sinh</label>
+                                    <input asp-for="DateOfBirth" type="date" class="form-control" />
+                                    <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
                                 </div>
                             </div>
 
                             <div class="form-group mb-3">
-                                <label asp-for="Address" class="form-label">Dia chi</label>
-                                <input asp-for="Address" class="form-control" />
-                                <span asp-validation-for="Address" class="text-danger"></span>
+                                <label asp-for="Address" class="form-label">Địa chỉ</label>
+                                <input asp-for="Address" class="form-control" placeholder="Nhập địa chỉ" />
+                                <span asp-validation-for="Address" class="text-danger small"></span>
                             </div>
+
                             <div class="form-group mb-3">
-                                <label asp-for="AvatarUrl" class="form-label">Avatar URL</label>
-                                <input asp-for="AvatarUrl" class="form-control" />
-                                <span asp-validation-for="AvatarUrl" class="text-danger"></span>
+                                <label asp-for="AvatarUrl" class="form-label">Ảnh đại diện (URL)</label>
+                                <input asp-for="AvatarUrl" class="form-control" placeholder="https://example.com/avatar.jpg" />
+                                <span asp-validation-for="AvatarUrl" class="text-danger small"></span>
                             </div>
-                            <div class="form-group mb-3">
-                                <label asp-for="Bio" class="form-label">Gioi thieu</label>
-                                <textarea asp-for="Bio" rows="4" class="form-control"></textarea>
-                                <span asp-validation-for="Bio" class="text-danger"></span>
+
+                            <div class="form-group mb-4">
+                                <label asp-for="Bio" class="form-label">Giới thiệu bản thân</label>
+                                <textarea asp-for="Bio" rows="4" class="form-control" placeholder="Viết đôi điều về bạn..."></textarea>
+                                <span asp-validation-for="Bio" class="text-danger small"></span>
                             </div>
 
                             <div class="row text-muted small mb-4">
-                                <div class="col-md-6">Ngay tao: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
-                                <div class="col-md-6">Dang nhap gan nhat: @(Model.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chua co")</div>
+                                <div class="col-md-6">
+                                    <i class="fa fa-calendar-o mr-1"></i>
+                                    Ngày tạo tài khoản: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                                <div class="col-md-6">
+                                    <i class="fa fa-clock-o mr-1"></i>
+                                    Đăng nhập gần nhất: @(Model.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có")
+                                </div>
                             </div>
 
-                            <button type="submit" class="btn btn-primary">Luu ho so</button>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fa fa-save mr-1"></i>Lưu thông tin
+                            </button>
                         </form>
+
                     </div>
                 </div>
+
             </div>
         </div>
     </div>

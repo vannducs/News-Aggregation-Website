@@ -4,17 +4,17 @@ namespace NewsAggregator.Models.ViewModels;
 
 public class ProfileViewModel
 {
-    [Required(ErrorMessage = "Vui long nhap ho ten.")]
+    [Required(ErrorMessage = "Vui lòng nhập họ và tên.")]
     [StringLength(100)]
     public string FullName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Vui long nhap email.")]
+    [Required(ErrorMessage = "Vui lòng nhập email.")]
     [StringLength(150)]
-    [EmailAddress(ErrorMessage = "Email khong hop le.")]
+    [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
     public string Email { get; set; } = string.Empty;
 
     [StringLength(20)]
-    [Phone(ErrorMessage = "So dien thoai khong hop le.")]
+    [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]
     public string? PhoneNumber { get; set; }
 
     [DataType(DataType.Date)]

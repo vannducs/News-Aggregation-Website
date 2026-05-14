@@ -1,6 +1,6 @@
 @model AdminDashboardViewModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Bảng điều khiển";
 }
 
 <main class="app-main">
@@ -8,12 +8,12 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-sm-6">
-                    <h3 class="mb-0">Dashboard</h3>
+                    <h3 class="mb-0">Bảng điều khiển</h3>
                 </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-end">
                         <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                        <li class="breadcrumb-item active" aria-current="page">Bảng điều khiển</li>
                     </ol>
                 </div>
             </div>
@@ -27,7 +27,7 @@
                     <div class="small-box text-bg-primary">
                         <div class="inner">
                             <h3>@Model.TotalPosts</h3>
-                            <p>Bai viet</p>
+                            <p>Bài viết</p>
                         </div>
                         <i class="small-box-icon bi bi-file-earmark-text-fill"></i>
                     </div>
@@ -36,7 +36,7 @@
                     <div class="small-box text-bg-success">
                         <div class="inner">
                             <h3>@Model.TotalMenus</h3>
-                            <p>Menu</p>
+                            <p>Danh mục</p>
                         </div>
                         <i class="small-box-icon bi bi-menu-button-wide-fill"></i>
                     </div>
@@ -45,7 +45,7 @@
                     <div class="small-box text-bg-warning">
                         <div class="inner">
                             <h3>@Model.TotalUsers</h3>
-                            <p>Nguoi dung</p>
+                            <p>Người dùng</p>
                         </div>
                         <i class="small-box-icon bi bi-people-fill"></i>
                     </div>
@@ -54,7 +54,7 @@
                     <div class="small-box text-bg-danger">
                         <div class="inner">
                             <h3>@Model.TotalComments</h3>
-                            <p>Binh luan</p>
+                            <p>Bình luận</p>
                         </div>
                         <i class="small-box-icon bi bi-chat-dots-fill"></i>
                     </div>
@@ -65,16 +65,16 @@
                 <div class="col-lg-7">
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Bai viet moi nhat</h3>
+                            <h3 class="card-title">Bài viết mới nhất</h3>
                         </div>
                         <div class="card-body table-responsive p-0">
                             <table class="table table-hover align-middle mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Tieu de</th>
-                                        <th>Chuyen muc</th>
-                                        <th>Tac gia</th>
-                                        <th>Ngay tao</th>
+                                        <th>Tiêu đề</th>
+                                        <th>Chuyên mục</th>
+                                        <th>Tác giả</th>
+                                        <th>Ngày tạo</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -95,26 +95,26 @@
                 <div class="col-lg-5">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h3 class="card-title mb-0">Thanh vien gan day</h3>
+                            <h3 class="card-title mb-0">Thành viên</h3>
                             @if (User.IsInRole(NewsAggregator.Models.UserRoles.Admin))
                             {
-                                <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="btn btn-sm btn-primary">Mo quan ly user</a>
+                                <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="btn btn-sm btn-primary">Quản lý</a>
                             }
                         </div>
                         <div class="card-body">
                             <p class="text-secondary mb-3">
-                                Quan ly tai khoan thanh vien, vai tro, trang thai hoat dong va reset mat khau truc tiep tu trang admin.
+                                Quản lý tài khoản thành viên, vai trò, trạng thái hoạt động và đặt lại mật khẩu trực tiếp từ trang quản trị.
                             </p>
                             @if (User.IsInRole(NewsAggregator.Models.UserRoles.Admin))
                             {
                                 <a asp-area="Admin" asp-controller="Users" asp-action="Create" class="btn btn-outline-primary">
-                                    <i class="bi bi-person-plus-fill me-1"></i>Them nguoi dung
+                                    <i class="bi bi-person-plus-fill me-1"></i>Thêm người dùng
                                 </a>
                             }
                             else
                             {
                                 <a asp-area="" asp-controller="Account" asp-action="Profile" class="btn btn-outline-primary">
-                                    <i class="bi bi-person-circle me-1"></i>Xem ho so cua toi
+                                    <i class="bi bi-person-circle me-1"></i>Xem hồ sơ của tôi
                                 </a>
                             }
                         </div>
@@ -122,7 +122,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Binh luan moi nhat</h3>
+                            <h3 class="card-title">Bình luận mới nhất</h3>
                         </div>
                         <div class="card-body p-0">
                             <ul class="list-group list-group-flush">

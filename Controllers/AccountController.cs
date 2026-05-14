@@ -49,7 +49,7 @@ public class AccountController : Controller
 
         if (user is null || !user.IsActive)
         {
-            ModelState.AddModelError(string.Empty, "Tai khoan khong ton tai hoac da bi khoa.");
+            ModelState.AddModelError(string.Empty, "Tài khoản không tồn tại hoặc đã bị khóa.");
             return View(model);
         }
 
@@ -155,7 +155,7 @@ public class AccountController : Controller
 
         if (await _context.AppUsers.AnyAsync(u => !u.IsDeleted && u.Email == model.Email && u.AppUserID != user.AppUserID))
         {
-            ModelState.AddModelError(nameof(model.Email), "Email da ton tai.");
+            ModelState.AddModelError(nameof(model.Email), "Email đã tồn tại.");
         }
 
         if (!ModelState.IsValid)
@@ -177,7 +177,7 @@ public class AccountController : Controller
 
         await _context.SaveChangesAsync();
         await SignInUserAsync(user);
-        TempData["ProfileMessage"] = "Da cap nhat ho so.";
+        TempData["ProfileMessage"] = "Đã cập nhật hồ sơ thành công.";
 
         return RedirectToAction(nameof(Profile));
     }
@@ -208,14 +208,14 @@ public class AccountController : Controller
         var verification = _passwordService.VerifyPassword(user.Password, model.CurrentPassword);
         if (!verification.IsVerified)
         {
-            ModelState.AddModelError(nameof(model.CurrentPassword), "Mat khau hien tai khong dung.");
+            ModelState.AddModelError(nameof(model.CurrentPassword), "Mật khẩu hiện tại không đúng.");
             return View(model);
         }
 
         user.Password = _passwordService.HashPassword(model.NewPassword);
         await _context.SaveChangesAsync();
         await SignInUserAsync(user);
-        TempData["PasswordMessage"] = "Da doi mat khau thanh cong.";
+        TempData["PasswordMessage"] = "Đã đổi mật khẩu thành công.";
 
         return RedirectToAction(nameof(ChangePassword));
     }
@@ -263,12 +263,12 @@ public class AccountController : Controller
     {
         if (await _context.AppUsers.AnyAsync(u => !u.IsDeleted && u.Email == model.Email))
         {
-            ModelState.AddModelError(nameof(model.Email), "Email da ton tai.");
+            ModelState.AddModelError(nameof(model.Email), "Email đã tồn tại.");
         }
 
         if (await _context.AppUsers.AnyAsync(u => !u.IsDeleted && u.UserName == model.UserName))
         {
-            ModelState.AddModelError(nameof(model.UserName), "Ten dang nhap da ton tai.");
+            ModelState.AddModelError(nameof(model.UserName), "Tên đăng nhập đã tồn tại.");
         }
     }
 

@@ -65,6 +65,13 @@ namespace NewsAggregator.Controllers
                     .AnyAsync(s => s.UserID == userId && s.PostID == id);
             }
 
+            var comments = await _db.Comments
+                .Where(c => c.PostID == id && c.IsApproved)
+                .Include(c => c.User)
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+            ViewBag.Comments = comments;
+
             return View(post);
         }
         public async Task<IActionResult> Search(string q)

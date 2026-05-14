@@ -1,0 +1,43 @@
+@using System.Security.Claims
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var fullName  = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "Người dùng";
+    var userName  = User.Identity?.Name ?? "";
+    var userRole  = User.FindFirst(ClaimTypes.Role)?.Value ?? "Member";
+
+    string ProfileActive    = currentController == "Account"    ? "active" : "";
+    string SavedActive      = currentController == "SavedPosts" ? "active" : "";
+}
+
+<div class="profile-sidebar-card card border-0 shadow-sm mb-4">
+    <div class="card-body text-center py-4 px-3">
+        <div class="profile-avatar-wrap mb-3">
+            <i class="fa fa-user-circle fa-5x" style="color:#9aa0ac;"></i>
+        </div>
+        <h5 class="mb-0 font-weight-bold">@fullName</h5>
+        <div class="text-muted small mt-1">@@@userName</div>
+        <div class="mt-2">
+            <span class="badge badge-primary px-3 py-1">@userRole</span>
+        </div>
+    </div>
+
+    <div class="list-group list-group-flush">
+        <a asp-area="" asp-controller="Account" asp-action="Profile"
+           class="list-group-item list-group-item-action sidebar-nav-item @ProfileActive">
+            <i class="fa fa-user mr-2"></i>Trang cá nhân
+        </a>
+        <a asp-area="" asp-controller="SavedPosts" asp-action="Index"
+           class="list-group-item list-group-item-action sidebar-nav-item @SavedActive">
+            <i class="fa fa-bookmark mr-2"></i>Bài viết đã lưu
+        </a>
+    </div>
+</div>
+
+<style>
+    .profile-sidebar-card .list-group-item { border-left: none; border-right: none; }
+    .profile-sidebar-card .sidebar-nav-item { color: #444; font-size: 14px; padding: .75rem 1.25rem; }
+    .profile-sidebar-card .sidebar-nav-item:hover { background: #f8f9fa; color: #e8282b; }
+    .profile-sidebar-card .sidebar-nav-item.active { background: #e8282b; color: #fff !important; border-color: #e8282b; }
+    .profile-sidebar-card .sidebar-nav-item.active:hover { background: #c82020; }
+    .profile-avatar-wrap { line-height: 1; }
+</style>

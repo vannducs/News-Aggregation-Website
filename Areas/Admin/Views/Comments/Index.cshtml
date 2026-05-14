@@ -1,17 +1,21 @@
 @model IEnumerable<Comment>
 @{
-    ViewData["Title"] = "Quan ly binh luan";
+    ViewData["Title"] = "Quản lý bình luận";
 }
 
 <main class="app-main">
     <div class="app-content-header">
         <div class="container-fluid">
             <div class="row">
-                <div class="col-sm-6"><h3 class="mb-0">Quan ly binh luan</h3></div>
+                <div class="col-sm-6">
+                    <h3 class="mb-0">Quản lý bình luận</h3>
+                </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-end">
-                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
-                        <li class="breadcrumb-item active">Binh luan</li>
+                        <li class="breadcrumb-item">
+                            <a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a>
+                        </li>
+                        <li class="breadcrumb-item active">Bình luận</li>
                     </ol>
                 </div>
             </div>
@@ -21,52 +25,71 @@
         <div class="container-fluid">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title mb-0">Danh sach binh luan</h3>
+                    <h3 class="card-title mb-0">Danh sách bình luận</h3>
                 </div>
                 <div class="card-body table-responsive p-0">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>Tac gia</th>
-                                <th>Bai viet</th>
-                                <th>Noi dung</th>
-                                <th>Ngay tao</th>
-                                <th>Trang thai</th>
-                                <th class="text-end">Tac vu</th>
+                                <th>Tác giả</th>
+                                <th>Bài viết</th>
+                                <th>Nội dung</th>
+                                <th>Ngày tạo</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
-                        @foreach (var comment in Model)
-                        {
-                            <tr>
-                                <td>
-                                    <div class="fw-semibold">@comment.AuthorName</div>
-                                    <div class="small text-muted">@comment.AuthorEmail</div>
-                                </td>
-                                <td>@comment.Post?.Title</td>
-                                <td>@comment.Content</td>
-                                <td>@comment.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>
-                                    <span class="badge @(comment.IsApproved ? "text-bg-success" : "text-bg-warning")">
-                                        @(comment.IsApproved ? "Da duyet" : "Cho duyet")
-                                    </span>
-                                </td>
-                                <td class="text-end">
-                                    <div class="btn-group">
-                                        <form asp-action="ToggleApproval" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@comment.CommentID" />
-                                            <button type="submit" class="btn btn-sm btn-outline-primary">Duyet/Bo duyet</button>
-                                        </form>
-                                        <form asp-action="Delete" method="post" onsubmit="return confirm('Xoa binh luan nay?');">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@comment.CommentID" />
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">Xoa</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">Chưa có bình luận nào.</td>
+                                </tr>
+                            }
+                            @foreach (var comment in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">@(comment.User?.FullName ?? comment.AuthorName ?? "Ẩn danh")</div>
+                                        <div class="small text-muted">@(comment.User?.Email ?? comment.AuthorEmail)</div>
+                                    </td>
+                                    <td>
+                                        <a asp-area="" asp-controller="News" asp-action="Detail"
+                                           asp-route-id="@comment.PostID" class="text-truncate d-inline-block"
+                                           style="max-width:200px;" target="_blank">
+                                            @comment.Post?.Title
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="d-inline-block text-truncate" style="max-width:220px;" title="@comment.Content">
+                                            @comment.Content
+                                        </span>
+                                    </td>
+                                    <td>@comment.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <span class="badge @(comment.IsApproved ? "text-bg-success" : "text-bg-warning")">
+                                            @(comment.IsApproved ? "Đã duyệt" : "Chờ duyệt")
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group">
+                                            <form asp-action="ToggleApproval" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@comment.CommentID" />
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    @(comment.IsApproved ? "Bỏ duyệt" : "Duyệt")
+                                                </button>
+                                            </form>
+                                            <form asp-action="Delete" method="post"
+                                                  onsubmit="return confirm('Xóa bình luận này?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@comment.CommentID" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
