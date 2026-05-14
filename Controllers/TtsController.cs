@@ -22,12 +22,11 @@ namespace NewsAggregator.Controllers
                 var apiKey = _config["FptAiKey"];
                 var url = "https://api.fpt.ai/hmi/tts/v5";
 
-                // Làm sạch text trước khi gửi FPT AI
                 var cleanText = CleanTextForTts(request.Text);
                 if (string.IsNullOrWhiteSpace(cleanText))
                     return BadRequest(new { error = "Không có nội dung văn bản để đọc!" });
 
-                // FPT AI giới hạn 500 ký tự mỗi request
+                //giới hạn 500 ký tự mỗi request
                 cleanText = cleanText.Length > 500 ? cleanText[..500] : cleanText;
 
                 _http.DefaultRequestHeaders.Clear();
@@ -61,7 +60,6 @@ namespace NewsAggregator.Controllers
         private static readonly Regex WhitespaceRegex   = new(@"[\r\n\t]+",    RegexOptions.Compiled);
         private static readonly Regex MultiSpaceRegex   = new(@"\s{2,}",       RegexOptions.Compiled);
 
-        // Làm sạch HTML/ảnh/link — chỉ giữ lại văn bản thuần
         private static string CleanTextForTts(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return string.Empty;

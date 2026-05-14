@@ -13,8 +13,6 @@ namespace NewsAggregator.Models
 
         public int? UserID { get; set; }
 
-        // DB dùng cột Content, không có AuthorName riêng
-        // Dùng NotMapped để EF Core bỏ qua cột này
         [NotMapped]
         public string AuthorName { get; set; } = string.Empty;
 

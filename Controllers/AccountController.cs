@@ -56,7 +56,7 @@ public class AccountController : Controller
         var verification = _passwordService.VerifyPassword(user.Password, model.Password);
         if (!verification.IsVerified)
         {
-            ModelState.AddModelError(string.Empty, "Ten dang nhap hoac mat khau khong dung.");
+            ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không đúng.");
             return View(model);
         }
 

@@ -17,7 +17,6 @@ namespace NewsAggregator.Controllers
             _db = db;
         }
 
-        // GET: /SavedPosts
         public async Task<IActionResult> Index()
         {
             var userId = GetCurrentUserId();
@@ -65,7 +64,6 @@ namespace NewsAggregator.Controllers
             return Json(new { success = true, message = "Đã lưu bài viết thành công!" });
         }
 
-        // POST: /SavedPosts/Remove
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Remove(int postId)
@@ -86,7 +84,6 @@ namespace NewsAggregator.Controllers
             return Json(new { success = true, message = "Đã xóa bài viết khỏi danh sách!" });
         }
 
-        // POST: /SavedPosts/RemoveFromList (redirect về danh sách)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveFromList(int postId)

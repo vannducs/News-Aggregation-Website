@@ -149,7 +149,6 @@ public class SourceController : Controller
         var source = await _db.Sources.FindAsync(id);
         if (source == null) return NotFound();
 
-        // Bật IsActive nếu đang tắt
         if (!source.IsActive)
         {
             source.IsActive = true;
@@ -157,7 +156,6 @@ public class SourceController : Controller
             await _db.SaveChangesAsync();
         }
 
-        // Trigger crawl chỉ nguồn này
         Hangfire.BackgroundJob.Enqueue<Services.CrawlerService>(
             service => service.CrawlSourceByIdAsync(id));
 

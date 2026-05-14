@@ -18,7 +18,6 @@ namespace NewsAggregator.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Tên bảng
             modelBuilder.Entity<Menu>().ToTable("tblMenu");
             modelBuilder.Entity<Post>().ToTable("tblPost");
             modelBuilder.Entity<Source>().ToTable("tblSources");
@@ -27,12 +26,10 @@ namespace NewsAggregator.Data
             modelBuilder.Entity<AppUser>().ToTable("tblUsers");
             modelBuilder.Entity<Comment>().ToTable("tblComments");
 
-            // Index
             modelBuilder.Entity<Post>().HasIndex(p => p.Link).IsUnique();
             modelBuilder.Entity<AISummary>().HasIndex(a => a.PostID).IsUnique();
             modelBuilder.Entity<AppUser>().HasIndex(u => u.Email).IsUnique();
 
-            // Relationships
             modelBuilder.Entity<Post>()
                 .HasOne(p => p.Menu)
                 .WithMany(m => m.Posts)

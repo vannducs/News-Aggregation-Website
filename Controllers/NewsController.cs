@@ -58,7 +58,6 @@ namespace NewsAggregator.Controllers
 
             ViewBag.RelatedPosts = relatedPosts;
 
-            // Kiểm tra bài viết đã được lưu chưa
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (int.TryParse(userIdStr, out var userId))
             {
@@ -85,7 +84,6 @@ namespace NewsAggregator.Controllers
             return View(posts);
         }
 
-        // Projects only columns needed for listing pages — excludes the large Contents column.
         private IQueryable<Post> PostSummaryQuery() =>
             _db.Posts
                 .AsNoTracking()

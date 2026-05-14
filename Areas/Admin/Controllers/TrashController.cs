@@ -17,7 +17,6 @@ public class TrashController : Controller
         _db = db;
     }
 
-    // GET: /Admin/Trash
     public async Task<IActionResult> Index()
     {
         ViewData["Title"] = "Thùng rác";
@@ -42,7 +41,6 @@ public class TrashController : Controller
         return View();
     }
 
-    // POST: Khôi phục bài viết
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RestorePost(int id)
@@ -59,7 +57,6 @@ public class TrashController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // POST: Xóa vĩnh viễn bài viết
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> PermanentDeletePost(int id)
@@ -74,7 +71,6 @@ public class TrashController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // POST: Khôi phục danh mục
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RestoreMenu(int id)
@@ -90,7 +86,6 @@ public class TrashController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // POST: Xóa vĩnh viễn danh mục
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> PermanentDeleteMenu(int id)
@@ -105,7 +100,6 @@ public class TrashController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // POST: Khôi phục nguồn báo
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RestoreSource(int id)
@@ -122,7 +116,6 @@ public class TrashController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // POST: Xóa vĩnh viễn nguồn báo
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> PermanentDeleteSource(int id)

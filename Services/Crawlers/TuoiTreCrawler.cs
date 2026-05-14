@@ -3,8 +3,6 @@ using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
 using NewsAggregator.Data;
 using NewsAggregator.Models;
-using NewsAggregator.Services.Crawlers;
-
 namespace NewsAggregator.Services.Crawlers
 {
     public class TuoiTreCrawler : BaseCrawler, INewsCrawler
@@ -111,7 +109,7 @@ namespace NewsAggregator.Services.Crawlers
                 var authorNode = htmlDoc.DocumentNode
                     .SelectSingleNode("//a[@class='name']");
 
-                var content = FixContentImages(contentNode?.InnerHtml ?? "");
+                var content = FixContentImages(contentNode?.InnerHtml ?? "", "https://tuoitre.vn");
                 var author  = authorNode?.InnerText?.Trim() ?? "Tuổi Trẻ";
 
                 return (content, author);

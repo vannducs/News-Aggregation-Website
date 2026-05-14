@@ -62,11 +62,12 @@ namespace NewsAggregator.Services.Crawlers
                     var imageUrl = ExtractImageFromDescription(description ?? "");
                     var cleanAbstract = StripHtml(description ?? "");
 
+                    var baseUrl = ContentHelper.ExtractBaseUrl(_source.WebsiteUrl ?? _source.RssUrl);
                     var post = new Post
                     {
                         Title       = title,
                         Abstract    = cleanAbstract.Length > 500 ? cleanAbstract[..500] : cleanAbstract,
-                        Contents    = FixContentImages(description ?? ""),
+                        Contents    = FixContentImages(description ?? "", baseUrl),
                         Link        = link,
                         Images      = imageUrl,
                         Author      = _source.SourceName,

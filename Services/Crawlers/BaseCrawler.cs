@@ -38,7 +38,7 @@ namespace NewsAggregator.Services.Crawlers
             }
         }
 
-        protected string FixContentImages(string html) => ContentHelper.FixContentImages(html);
+        protected string FixContentImages(string html, string? baseUrl = null) => ContentHelper.FixContentImages(html, baseUrl);
 
         protected string StripHtml(string html)
         {

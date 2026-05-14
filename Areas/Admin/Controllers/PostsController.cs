@@ -20,7 +20,6 @@ public class PostsController : Controller
         _db = db;
     }
 
-    // GET: /Admin/Posts
     public async Task<IActionResult> Index(string? search, int? menuId, int? sourceId, string? status, int page = 1)
     {
         ViewData["Title"] = "Quản lý bài viết";

@@ -13,7 +13,6 @@ namespace NewsAggregator.Controllers
 
         public SearchController(AppDbContext context) => _context = context;
 
-        // GET /Search/Index
         [HttpGet]
         public async Task<IActionResult> Index(
             string keyword   = "",
@@ -31,13 +30,11 @@ namespace NewsAggregator.Controllers
 
             var query = _context.Posts.Include(p => p.Menu).Where(p => p.IsActive);
 
-            // ── Fuzzy Search ─────────────────────────────────────────────────────
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 var tokens = keyword.ToLower()
                     .Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-                // Mỗi token phải xuất hiện trong ít nhất 1 field (OR giữa fields, AND giữa tokens)
                 foreach (var token in tokens)
                 {
                     var t = token;
@@ -111,7 +108,6 @@ namespace NewsAggregator.Controllers
             return View(vm);
         }
 
-        // GET /Search/LiveSearch?keyword=...  (AJAX - live dropdown)
         [HttpGet]
         public async Task<IActionResult> LiveSearch(string keyword = "")
         {
@@ -150,7 +146,6 @@ namespace NewsAggregator.Controllers
             return Json(new { suggestions, totalCount });
         }
 
-        // GET /Search/Suggestions (legacy, tương thích ngược)
         [HttpGet]
         public async Task<IActionResult> Suggestions(string keyword = "")
         {

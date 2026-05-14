@@ -12,14 +12,11 @@ public class HomeController : BaseController
     public HomeController(AppDbContext context) : base(context)
     {
     }
-
-    // Redirect về NewsController vì trang chủ đã xử lý ở đó
     public IActionResult Index()
     {
         return RedirectToAction("Index", "News");
     }
 
-    // Category của Bao — dùng ViewModel
     [Route("Home/Category/{id:int}")]
     public async Task<IActionResult> Category(int id)
     {
