@@ -111,7 +111,7 @@ namespace NewsAggregator.Services.Crawlers
                 var authorNode = htmlDoc.DocumentNode
                     .SelectSingleNode("//a[@class='name']");
 
-                var content = contentNode?.InnerHtml ?? "";
+                var content = FixContentImages(contentNode?.InnerHtml ?? "");
                 var author  = authorNode?.InnerText?.Trim() ?? "Tuổi Trẻ";
 
                 return (content, author);

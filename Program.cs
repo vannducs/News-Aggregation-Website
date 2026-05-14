@@ -31,6 +31,8 @@ builder.Services.AddHttpClient("crawler", client =>
 // SERVICES
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<PasswordService>();
+builder.Services.AddScoped<TrashPurgeService>();
+builder.Services.AddScoped<PostImageFixService>();
 
 // HANGFIRE
 builder.Services.AddHangfire(config =>
@@ -65,12 +67,21 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// HANGFIRE
-app.UseHangfireDashboard("/hangfire");
+// HANGFIRE — chỉ Admin mới truy cập được dashboard
+app.UseHangfireDashboard("/hangfire", new Hangfire.DashboardOptions
+{
+    Authorization = new[] { new HangfireAdminAuthFilter() }
+});
 RecurringJob.AddOrUpdate<CrawlerService>(
     "crawl-all-sources",
     service => service.RunAllAsync(),
     "*/30 * * * *"
+);
+// Tự động xóa vĩnh viễn thùng rác sau 30 ngày — chạy mỗi ngày lúc 3:00 sáng
+RecurringJob.AddOrUpdate<TrashPurgeService>(
+    "purge-trash",
+    service => service.PurgeOldDeletedItemsAsync(),
+    "0 3 * * *"
 );
 
 // SEED DATA

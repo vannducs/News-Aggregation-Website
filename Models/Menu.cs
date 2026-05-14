@@ -15,6 +15,8 @@ namespace NewsAggregator.Models
         public string? Link {get; set;}
         public int MenuOrder {get; set;} = 0;
         public int Position {get; set;}=1;
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
         public ICollection<Post> Posts {get; set;} = new List<Post>();
 
     }

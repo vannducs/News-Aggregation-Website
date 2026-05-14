@@ -67,7 +67,7 @@ public class AccountController : Controller
 
         user.LastLoginAt = DateTime.Now;
         await _context.SaveChangesAsync();
-        await SignInUserAsync(user);
+        await SignInUserAsync(user, model.RememberMe);
 
         return RedirectToLocal(model.ReturnUrl, user.Role);
     }
@@ -235,7 +235,7 @@ public class AccountController : Controller
         return View();
     }
 
-    private async Task SignInUserAsync(Models.AppUser user)
+    private async Task SignInUserAsync(Models.AppUser user, bool rememberMe = false)
     {
         var claims = new List<Claim>
         {
@@ -249,14 +249,14 @@ public class AccountController : Controller
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
 
+        var props = new AuthenticationProperties { IsPersistent = rememberMe };
+        if (rememberMe)
+            props.ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7);
+
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             principal,
-            new AuthenticationProperties
-            {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
-            });
+            props);
     }
 
     private async Task ValidateRegisterModelAsync(RegisterViewModel model)

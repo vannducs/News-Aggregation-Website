@@ -18,6 +18,9 @@ namespace NewsAggregator.Models
         public DateTime? CrawledAt {get; set;}
         public int ViewCount {get; set;} =0;
 
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
+
         public int MenuID {get; set;}
         public int? SourceID {get; set;}
 

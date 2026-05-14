@@ -5,31 +5,18 @@ using NewsAggregator.Services.Crawlers;
 
 namespace NewsAggregator.Services
 {
-    public class CrawlerService
+    public class CrawlerService(AppDbContext db, IHttpClientFactory httpClientFactory)
     {
-        private readonly AppDbContext _db;
-        private readonly IHttpClientFactory _httpClientFactory;
-
-        public CrawlerService(
-            AppDbContext db,
-            IHttpClientFactory httpClientFactory)
-        {
-            _db = db;
-            _httpClientFactory = httpClientFactory;
-        }
-
         public async Task RunAllAsync()
         {
             Console.WriteLine($"[Crawler] Bắt đầu crawl lúc {DateTime.Now}");
 
-            var sources = await _db.Sources
-                .Where(s => s.IsActive)
+            var sources = await db.Sources
+                .Where(s => s.IsActive && !s.IsDeleted)
                 .ToListAsync();
 
             foreach (var source in sources)
-            {
                 await CrawlSourceAsync(source);
-            }
 
             Console.WriteLine($"[Crawler] Hoàn thành lúc {DateTime.Now}");
         }
@@ -42,66 +29,45 @@ namespace NewsAggregator.Services
                 CrawlTime = DateTime.Now,
                 Status    = "Running"
             };
-            _db.CrawlLogs.Add(log);
-            await _db.SaveChangesAsync();
+            db.CrawlLogs.Add(log);
+            await db.SaveChangesAsync();
 
             try
             {
-                var http = _httpClientFactory.CreateClient("crawler");
+                var http = httpClientFactory.CreateClient("crawler");
 
-                INewsCrawler crawler;
-
-                if (source.SourceName.IndexOf("VnExpress",
-                    StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    crawler = new VnExpressCrawler(_db, http);
-                }
-                else if (
-                    source.SourceName.IndexOf("Tuổi Trẻ",
-                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    source.SourceName.IndexOf("Tuoi Tre",
-                        StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    crawler = new TuoiTreCrawler(_db, http);
-                }
-                else if (
-                    source.SourceName.IndexOf("Dân Trí",
-                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    source.SourceName.IndexOf("Dan Tri",
-                        StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    crawler = new DanTriCrawler(_db, http);
-                }
-                else
-                {
-                    throw new NotSupportedException(
-                        $"Không hỗ trợ nguồn: {source.SourceName}");
-                }
+                INewsCrawler crawler = source.SourceName.Contains("VnExpress", StringComparison.OrdinalIgnoreCase)
+                    ? new VnExpressCrawler(db, http)
+                    : source.SourceName.Contains("Tuổi Trẻ", StringComparison.OrdinalIgnoreCase)
+                      || source.SourceName.Contains("Tuoi Tre", StringComparison.OrdinalIgnoreCase)
+                        ? new TuoiTreCrawler(db, http)
+                        : source.SourceName.Contains("Dân Trí", StringComparison.OrdinalIgnoreCase)
+                          || source.SourceName.Contains("Dan Tri", StringComparison.OrdinalIgnoreCase)
+                            ? new DanTriCrawler(db, http)
+                            : new GenericRssCrawler(db, http, source);
 
                 int count = await crawler.CrawlAsync();
 
                 log.Status       = "Success";
                 log.ArticleCount = count;
-                Console.WriteLine(
-                    $"[{source.SourceName}] Crawl được {count} bài");
+                Console.WriteLine($"[{source.SourceName}] Crawl được {count} bài");
             }
             catch (Exception ex)
             {
                 log.Status       = "Failed";
                 log.ErrorMessage = ex.Message;
-                Console.WriteLine(
-                    $"[{source.SourceName}] Lỗi: {ex.Message}");
+                Console.WriteLine($"[{source.SourceName}] Lỗi: {ex.Message}");
             }
             finally
             {
-                await _db.SaveChangesAsync();
+                await db.SaveChangesAsync();
             }
         }
-        // Crawl chỉ 1 nguồn theo ID — dùng cho nút CrawlNow
+
         public async Task CrawlSourceByIdAsync(int sourceId)
         {
-            var source = await _db.Sources.FindAsync(sourceId);
-            if (source == null || !source.IsActive) return;
+            var source = await db.Sources.FindAsync(sourceId);
+            if (source == null || !source.IsActive || source.IsDeleted) return;
 
             Console.WriteLine($"[CrawlNow] Bắt đầu crawl {source.SourceName}");
             await CrawlSourceAsync(source);

@@ -1,0 +1,181 @@
+@model List<NewsAggregator.Models.Post>
+@{
+    ViewData["Title"] = "Quản lý bài viết";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+    int page = ViewBag.Page;
+    int totalPages = ViewBag.TotalPages;
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6"><h3 class="mb-0">Quản lý bài viết</h3></div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        <li class="breadcrumb-item active">Bài viết</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-content">
+        <div class="container-fluid">
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @* Bộ lọc *@
+            <div class="card mb-3">
+                <div class="card-body">
+                    <form method="get" class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <input type="text" name="search" value="@ViewBag.Search"
+                                   class="form-control" placeholder="Tìm tiêu đề, tác giả..." />
+                        </div>
+                        <div class="col-md-2">
+                            <select name="menuId" asp-items="ViewBag.Menus" class="form-select">
+                                <option value="">-- Danh mục --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="sourceId" asp-items="ViewBag.Sources" class="form-select">
+                                <option value="">-- Nguồn báo --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="status" class="form-select">
+                                <option value="" selected="@(ViewBag.Status == null)">-- Trạng thái --</option>
+                                <option value="active" selected="@(ViewBag.Status == "active")">Đang hiện</option>
+                                <option value="hidden" selected="@(ViewBag.Status == "hidden")">Đang ẩn</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-1"></i>Lọc
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        Danh sách bài viết
+                        <span class="badge bg-primary ms-2">@ViewBag.Total</span>
+                    </h3>
+                    <form asp-action="FixAllImages" method="post" class="d-inline"
+                          onsubmit="return confirm('Sửa ảnh toàn bộ bài viết cũ? Job sẽ chạy ngầm.')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-image me-1"></i>Sửa ảnh bài cũ
+                        </button>
+                    </form>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tiêu đề</th>
+                                <th>Danh mục</th>
+                                <th>Nguồn báo</th>
+                                <th>Ngày đăng</th>
+                                <th>Lượt xem</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var post in Model)
+                            {
+                                <tr>
+                                    <td>@post.PostID</td>
+                                    <td style="max-width:300px">
+                                        <a asp-area="" asp-controller="News" asp-action="Detail"
+                                           asp-route-id="@post.PostID" target="_blank"
+                                           class="text-truncate d-inline-block" style="max-width:280px">
+                                            @post.Title
+                                        </a>
+                                    </td>
+                                    <td><span class="badge bg-secondary">@post.Menu?.MenuName</span></td>
+                                    <td>@post.Source?.SourceName</td>
+                                    <td>@post.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@post.ViewCount</td>
+                                    <td>
+                                        @if (post.IsActive)
+                                        {
+                                            <span class="badge bg-success">Hiện</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">Ẩn</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            @* Ẩn/Hiện *@
+                                            <form asp-area="Admin" asp-controller="Posts" asp-action="ToggleActive"
+                                                  asp-route-id="@post.PostID" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="btn btn-sm @(post.IsActive ? "btn-warning" : "btn-success")"
+                                                        title="@(post.IsActive ? "Ẩn bài" : "Hiện bài")">
+                                                    <i class="bi @(post.IsActive ? "bi-eye-slash-fill" : "bi-eye-fill")"></i>
+                                                </button>
+                                            </form>
+
+                                            @* Xóa (soft) *@
+                                            <form asp-area="Admin" asp-controller="Posts" asp-action="Delete"
+                                                  asp-route-id="@post.PostID" method="post" class="d-inline"
+                                                  onsubmit="return confirm('Chuyển bài viết này vào thùng rác?')">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-danger btn-sm" title="Xóa">
+                                                    <i class="bi bi-trash-fill"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @* Phân trang *@
+                @if (totalPages > 1)
+                {
+                    <div class="card-footer d-flex justify-content-center">
+                        <nav>
+                            <ul class="pagination mb-0">
+                                @for (int i = 1; i <= totalPages; i++)
+                                {
+                                    <li class="page-item @(i == page ? "active" : "")">
+                                        <a class="page-link"
+                                           asp-area="Admin" asp-controller="Posts" asp-action="Index"
+                                           asp-route-page="@i"
+                                           asp-route-search="@ViewBag.Search"
+                                           asp-route-menuId="@ViewBag.MenuId"
+                                           asp-route-sourceId="@ViewBag.SourceId"
+                                           asp-route-status="@ViewBag.Status">
+                                            @i
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    </div>
+                }
+            </div>
+
+        </div>
+    </div>
+</main>

@@ -2,8 +2,8 @@
 @{
     ViewData["Title"] = "Trang chủ";
     List<Post>? featuredPosts = Model.Take(4).ToList();
-    List<Post>? editorPosts   = Model.Skip(4).Take(6).ToList();
-    List<Post>? latestPosts   = Model.Skip(10).ToList();
+    List<Post>? editorPosts   = Model.Skip(4).Take(8).ToList();
+    List<Post>? latestPosts   = Model.Skip(12).ToList();
 }
 
 @* ===== FEATURED POSTS ===== *@
@@ -128,54 +128,102 @@
     <div class="container">
         <div class="row">
 
-            @* Cột chính — bài viết nổi bật *@
+            @* Cột chính — bài viết nổi bật (slider, 4 bài/slide theo dạng 2×2) *@
             <div class="col-lg-8 col-md-12 col-sm-12 col-xs-12">
                 <div class="news-style-one">
                     <h3 class="news-title"><span>Bài viết nổi bật</span></h3>
                     <div class="news-style-one-slide">
-
-                        @* Dùng @foreach để lặp qua danh sách editorPosts *@
-                        @foreach (var p in editorPosts)
-                        {
-                            <div class="item">
-                                <div class="post-block-wrapper clearfix mb-5">
-                                    <div class="post-thumbnail">
-                                        <a asp-controller="News"
-                                           asp-action="Detail"
-                                           asp-route-id="@p.PostID">
-                                            @* Nếu có ảnh thì dùng ảnh đó
-                                               Nếu không có thì dùng ảnh mặc định *@
-                                            <img class="img-fluid"
-                                                 src="@(string.IsNullOrEmpty(p.Images)
-                                                    ? "/images/news/news-01.jpg"
-                                                    : p.Images)"
-                                                 alt="@p.Title" />
-                                        </a>
-                                    </div>
-                                    <div class="post-content">
-                                        <h2 class="post-title mt-3">
-                                            <a asp-controller="News"
-                                               asp-action="Detail"
-                                               asp-route-id="@p.PostID">
-                                                @p.Title
-                                            </a>
-                                        </h2>
-                                        <div class="post-meta mb-2">
-                                            <span class="posted-time">
-                                                <i class="fa fa-clock-o mr-2"></i>
-                                                @p.CreatedDate.ToString("dd/MM/yyyy HH:mm")
-                                            </span>
-                                            <span class="post-author">
-                                                by <a href="#">@p.Author</a>
-                                            </span>
+                        @* Slide 1: bài 0–3 *@
+                        <div>
+                            <div class="row">
+                                @for (int i = 0; i < 4 && i < editorPosts.Count; i++)
+                                {
+                                    var p = editorPosts[i];
+                                    <div class="col-sm-6 mb-4">
+                                        <div class="post-block-wrapper clearfix">
+                                            <div class="post-thumbnail">
+                                                <a asp-controller="News"
+                                                   asp-action="Detail"
+                                                   asp-route-id="@p.PostID">
+                                                    <img class="img-fluid"
+                                                         src="@(string.IsNullOrEmpty(p.Images) ? "/images/news/news-01.jpg" : p.Images)"
+                                                         alt="@p.Title" />
+                                                </a>
+                                            </div>
+                                            <div class="post-content">
+                                                <a class="post-category"
+                                                   asp-controller="News"
+                                                   asp-action="Category"
+                                                   asp-route-id="@p.MenuID">
+                                                    @p.Menu?.MenuName
+                                                </a>
+                                                <h2 class="post-title title-sm mt-2">
+                                                    <a asp-controller="News"
+                                                       asp-action="Detail"
+                                                       asp-route-id="@p.PostID">
+                                                        @p.Title
+                                                    </a>
+                                                </h2>
+                                                <p class="text-muted small mt-1">@p.Abstract</p>
+                                                <div class="post-meta">
+                                                    <span class="posted-time">
+                                                        <i class="fa fa-clock-o mr-1"></i>
+                                                        @p.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        @* Abstract — tóm tắt ngắn của bài viết *@
-                                        <p>@p.Abstract</p>
                                     </div>
+                                }
+                            </div>
+                        </div>
+                        @* Slide 2: bài 4–7 *@
+                        @if (editorPosts.Count > 4)
+                        {
+                            <div>
+                                <div class="row">
+                                    @for (int i = 4; i < 8 && i < editorPosts.Count; i++)
+                                    {
+                                        var p = editorPosts[i];
+                                        <div class="col-sm-6 mb-4">
+                                            <div class="post-block-wrapper clearfix">
+                                                <div class="post-thumbnail">
+                                                    <a asp-controller="News"
+                                                       asp-action="Detail"
+                                                       asp-route-id="@p.PostID">
+                                                        <img class="img-fluid"
+                                                             src="@(string.IsNullOrEmpty(p.Images) ? "/images/news/news-01.jpg" : p.Images)"
+                                                             alt="@p.Title" />
+                                                    </a>
+                                                </div>
+                                                <div class="post-content">
+                                                    <a class="post-category"
+                                                       asp-controller="News"
+                                                       asp-action="Category"
+                                                       asp-route-id="@p.MenuID">
+                                                        @p.Menu?.MenuName
+                                                    </a>
+                                                    <h2 class="post-title title-sm mt-2">
+                                                        <a asp-controller="News"
+                                                           asp-action="Detail"
+                                                           asp-route-id="@p.PostID">
+                                                            @p.Title
+                                                        </a>
+                                                    </h2>
+                                                    <p class="text-muted small mt-1">@p.Abstract</p>
+                                                    <div class="post-meta">
+                                                        <span class="posted-time">
+                                                            <i class="fa fa-clock-o mr-1"></i>
+                                                            @p.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         }
-
                     </div>
                 </div>
             </div>

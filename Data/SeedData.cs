@@ -14,6 +14,7 @@ namespace NewsAggregator.Data
 
             await context.Database.EnsureCreatedAsync();
             await EnsureUserSchemaAsync(context);
+            await EnsureSoftDeleteSchemaAsync(context);
 
             if (!await context.Menus.AnyAsync())
             {
@@ -219,6 +220,32 @@ namespace NewsAggregator.Data
                 "IF COL_LENGTH('tblUsers', 'LastLoginAt') IS NULL ALTER TABLE tblUsers ADD LastLoginAt DATETIME2 NULL;",
                 "IF COL_LENGTH('tblUsers', 'IsDeleted') IS NULL ALTER TABLE tblUsers ADD IsDeleted BIT NOT NULL CONSTRAINT DF_tblUsers_IsDeleted DEFAULT(0);",
                 "IF COL_LENGTH('tblUsers', 'DeletedAt') IS NULL ALTER TABLE tblUsers ADD DeletedAt DATETIME2 NULL;"
+            };
+
+            foreach (var command in commands)
+            {
+                await context.Database.ExecuteSqlRawAsync(command);
+            }
+        }
+
+        private static async Task EnsureSoftDeleteSchemaAsync(AppDbContext context)
+        {
+            var commands = new[]
+            {
+                "IF COL_LENGTH('tblPost', 'IsDeleted') IS NULL ALTER TABLE tblPost ADD IsDeleted BIT NOT NULL CONSTRAINT DF_tblPost_IsDeleted DEFAULT(0);",
+                "IF COL_LENGTH('tblPost', 'DeletedAt') IS NULL ALTER TABLE tblPost ADD DeletedAt DATETIME2 NULL;",
+                "IF COL_LENGTH('tblMenu', 'IsDeleted') IS NULL ALTER TABLE tblMenu ADD IsDeleted BIT NOT NULL CONSTRAINT DF_tblMenu_IsDeleted DEFAULT(0);",
+                "IF COL_LENGTH('tblMenu', 'DeletedAt') IS NULL ALTER TABLE tblMenu ADD DeletedAt DATETIME2 NULL;",
+                "IF COL_LENGTH('tblSources', 'IsDeleted') IS NULL ALTER TABLE tblSources ADD IsDeleted BIT NOT NULL CONSTRAINT DF_tblSources_IsDeleted DEFAULT(0);",
+                "IF COL_LENGTH('tblSources', 'DeletedAt') IS NULL ALTER TABLE tblSources ADD DeletedAt DATETIME2 NULL;",
+                @"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSavedPosts')
+                  CREATE TABLE tblSavedPosts (
+                      SavedPostID INT IDENTITY(1,1) PRIMARY KEY,
+                      UserID INT NOT NULL,
+                      PostID INT NOT NULL,
+                      SavedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+                      CONSTRAINT UQ_SavedPosts UNIQUE (UserID, PostID)
+                  );"
             };
 
             foreach (var command in commands)

@@ -21,7 +21,10 @@ namespace NewsAggregator.Areas.Admin.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var menus = await _context.Menus.OrderBy(m => m.Position).ThenBy(m => m.MenuOrder).ToListAsync();
+            var menus = await _context.Menus
+                .Where(m => !m.IsDeleted)
+                .OrderBy(m => m.Position).ThenBy(m => m.MenuOrder)
+                .ToListAsync();
             return View(menus);
         }
 
@@ -155,17 +158,22 @@ namespace NewsAggregator.Areas.Admin.Controllers
             var menu = await _context.Menus.FindAsync(id);
             if (menu is not null)
             {
-                var childMenus = await _context.Menus.Where(m => m.ParentID == id).ToListAsync();
+                var childMenus = await _context.Menus
+                    .Where(m => m.ParentID == id && !m.IsDeleted)
+                    .ToListAsync();
                 foreach (var child in childMenus)
                 {
                     child.ParentID = 0;
                     child.Levels = 1;
                 }
 
-                _context.Menus.Remove(menu);
+                menu.IsDeleted = true;
+                menu.DeletedAt = DateTime.Now;
+                menu.IsActive = false;
                 await _context.SaveChangesAsync();
             }
 
+            TempData["Success"] = "Đã chuyển danh mục vào thùng rác!";
             return RedirectToAction(nameof(Index));
         }
 
@@ -220,7 +228,7 @@ namespace NewsAggregator.Areas.Admin.Controllers
         private async Task<AdminMenuFormViewModel> BuildFormViewModelAsync(AdminMenuFormViewModel model)
         {
             var parentMenus = await _context.Menus
-                .Where(m => m.ParentID == 0 && m.MenuID != model.MenuID)
+                .Where(m => m.ParentID == 0 && m.MenuID != model.MenuID && !m.IsDeleted)
                 .OrderBy(m => m.MenuOrder)
                 .ToListAsync();
 

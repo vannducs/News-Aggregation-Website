@@ -23,6 +23,7 @@ public class SourceController : Controller
         ViewData["Title"] = "Quản lý nguồn báo";
 
         var sources = await _db.Sources
+            .Where(s => !s.IsDeleted)
             .OrderBy(s => s.SourceName)
             .ToListAsync();
 
@@ -128,10 +129,13 @@ public class SourceController : Controller
         var source = await _db.Sources.FindAsync(id);
         if (source == null) return NotFound();
 
-        _db.Sources.Remove(source);
+        source.IsDeleted = true;
+        source.DeletedAt = DateTime.Now;
+        source.IsActive = false;
+        _db.Sources.Update(source);
         await _db.SaveChangesAsync();
 
-        TempData["Success"] = "Đã xóa nguồn báo!";
+        TempData["Success"] = $"Đã chuyển '{source.SourceName}' vào thùng rác!";
         return RedirectToAction(nameof(Index));
     }
 

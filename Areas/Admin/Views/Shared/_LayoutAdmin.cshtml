@@ -114,6 +114,18 @@
                         }
 
                         @if (User.IsInRole(NewsAggregator.Models.UserRoles.Admin) ||
+                             User.IsInRole(NewsAggregator.Models.UserRoles.Editor))
+                        {
+                            <li class="nav-item">
+                                <a asp-area="Admin" asp-controller="Posts" asp-action="Index"
+                                   class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Posts" ? "active" : "")">
+                                    <i class="nav-icon bi bi-newspaper"></i>
+                                    <p>Quản lý bài viết</p>
+                                </a>
+                            </li>
+                        }
+
+                        @if (User.IsInRole(NewsAggregator.Models.UserRoles.Admin) ||
                              User.IsInRole(NewsAggregator.Models.UserRoles.Moderator))
                         {
                             <li class="nav-item">
@@ -121,6 +133,18 @@
                                    class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Comments" ? "active" : "")">
                                     <i class="nav-icon bi bi-chat-dots-fill"></i>
                                     <p>Quản lý bình luận</p>
+                                </a>
+                            </li>
+                        }
+
+                        @if (User.IsInRole(NewsAggregator.Models.UserRoles.Admin) ||
+                             User.IsInRole(NewsAggregator.Models.UserRoles.Editor))
+                        {
+                            <li class="nav-item">
+                                <a asp-area="Admin" asp-controller="Trash" asp-action="Index"
+                                   class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Trash" ? "active" : "")">
+                                    <i class="nav-icon bi bi-trash3-fill text-danger"></i>
+                                    <p>Thùng rác</p>
                                 </a>
                             </li>
                         }

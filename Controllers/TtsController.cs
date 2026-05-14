@@ -1,18 +1,14 @@
+using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NewsAggregator.Controllers
 {
-    public class TtsController : Controller
+    public class TtsController(IConfiguration config, IHttpClientFactory factory) : Controller
     {
-        private readonly IConfiguration _config;
-        private readonly HttpClient _http;
-
-        public TtsController(IConfiguration config, IHttpClientFactory factory)
-        {
-            _config = config;
-            _http = factory.CreateClient();
-        }
+        private readonly IConfiguration _config = config;
+        private readonly HttpClient _http = factory.CreateClient();
 
         // POST: /Tts/Speak
         [HttpPost]
@@ -26,17 +22,20 @@ namespace NewsAggregator.Controllers
                 var apiKey = _config["FptAiKey"];
                 var url = "https://api.fpt.ai/hmi/tts/v5";
 
-                // Giới hạn 500 ký tự mỗi request (FPT AI giới hạn)
-                var text = request.Text.Length > 500
-                    ? request.Text.Substring(0, 500)
-                    : request.Text;
+                // Làm sạch text trước khi gửi FPT AI
+                var cleanText = CleanTextForTts(request.Text);
+                if (string.IsNullOrWhiteSpace(cleanText))
+                    return BadRequest(new { error = "Không có nội dung văn bản để đọc!" });
+
+                // FPT AI giới hạn 500 ký tự mỗi request
+                cleanText = cleanText.Length > 500 ? cleanText[..500] : cleanText;
 
                 _http.DefaultRequestHeaders.Clear();
                 _http.DefaultRequestHeaders.Add("api-key", apiKey);
                 _http.DefaultRequestHeaders.Add("speed", "0");
                 _http.DefaultRequestHeaders.Add("voice", request.Voice ?? "banmai");
 
-                var content = new StringContent(text, Encoding.UTF8, "text/plain");
+                var content = new StringContent(cleanText, Encoding.UTF8, "text/plain");
                 var response = await _http.PostAsync(url, content);
                 var responseJson = await response.Content.ReadAsStringAsync();
 
@@ -46,11 +45,8 @@ namespace NewsAggregator.Controllers
                 if (!response.IsSuccessStatusCode)
                     return StatusCode(500, new { error = "Lỗi TTS: " + responseJson });
 
-                // FPT AI trả về URL file audio
                 using var doc = System.Text.Json.JsonDocument.Parse(responseJson);
-                var audioUrl = doc.RootElement
-                    .GetProperty("async")
-                    .GetString();
+                var audioUrl = doc.RootElement.GetProperty("async").GetString();
 
                 return Ok(new { audioUrl });
             }
@@ -59,6 +55,34 @@ namespace NewsAggregator.Controllers
                 Console.WriteLine($"[TTS] Lỗi: {ex.Message}");
                 return StatusCode(500, new { error = ex.Message });
             }
+        }
+
+        private static readonly Regex UrlRegex        = new(@"https?://\S+",  RegexOptions.Compiled);
+        private static readonly Regex WhitespaceRegex   = new(@"[\r\n\t]+",    RegexOptions.Compiled);
+        private static readonly Regex MultiSpaceRegex   = new(@"\s{2,}",       RegexOptions.Compiled);
+
+        // Làm sạch HTML/ảnh/link — chỉ giữ lại văn bản thuần
+        private static string CleanTextForTts(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+
+            var doc = new HtmlDocument();
+            doc.LoadHtml(input);
+
+            var removeNodes = doc.DocumentNode
+                .SelectNodes("//img|//figure|//figcaption|//script|//style|//iframe|//video|//audio|//table")
+                ?? Enumerable.Empty<HtmlNode>();
+
+            foreach (var node in removeNodes.ToList())
+                node.Remove();
+
+            var text = doc.DocumentNode.InnerText;
+            text = UrlRegex.Replace(text, " ");
+            text = WhitespaceRegex.Replace(text, " ");
+            text = MultiSpaceRegex.Replace(text, " ");
+            text = System.Net.WebUtility.HtmlDecode(text);
+
+            return text.Trim();
         }
     }
 

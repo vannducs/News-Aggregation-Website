@@ -12,16 +12,25 @@ namespace NewsAggregator.Services.Crawlers
             _db = db;
             _http = http;
         }
+
         protected string ExtractImageFromDescription(string description)
         {
             if (string.IsNullOrEmpty(description)) return "";
             try
             {
-                var htmlDoc = new HtmlDocument(); 
+                var htmlDoc = new HtmlDocument();
                 htmlDoc.LoadHtml(description);
 
                 var imgNode = htmlDoc.DocumentNode.SelectSingleNode("//img");
-                return imgNode?.GetAttributeValue("src","") ?? "";
+                if (imgNode == null) return "";
+
+                // Ưu tiên data-src nếu src rỗng (lazy loading)
+                var src = imgNode.GetAttributeValue("src", "");
+                if (string.IsNullOrEmpty(src) || src == "about:blank")
+                    src = imgNode.GetAttributeValue("data-src", "")
+                       ?? imgNode.GetAttributeValue("data-original", "");
+
+                return src ?? "";
             }
             catch
             {
@@ -29,20 +38,19 @@ namespace NewsAggregator.Services.Crawlers
             }
         }
 
+        protected string FixContentImages(string html) => ContentHelper.FixContentImages(html);
+
         protected string StripHtml(string html)
         {
             if (string.IsNullOrEmpty(html)) return "";
-
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
-
             return doc.DocumentNode.InnerText.Trim();
         }
 
         protected DateTime ParseDate(string? dateStr)
         {
             if (string.IsNullOrEmpty(dateStr)) return DateTime.Now;
-
             return DateTime.TryParse(dateStr, out var result) ? result : DateTime.Now;
         }
     }

@@ -110,7 +110,7 @@ namespace NewsAggregator.Services.Crawlers
                 var authorNode = htmlDoc.DocumentNode
                     .SelectSingleNode("//a[@rel='author']");
 
-                var content = contentNode?.InnerHtml ?? "";
+                var content = FixContentImages(contentNode?.InnerHtml ?? "");
                 var author  = authorNode?.InnerText?.Trim() ?? "Dân Trí";
 
                 return (content, author);

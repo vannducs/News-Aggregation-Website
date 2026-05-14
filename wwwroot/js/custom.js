@@ -42,15 +42,16 @@ jQuery(function($) {
 	//Latest news slide
 	$('.news-style-one-slide').slick({
 		infinite: true,
-		slidesToShow: 2,
+		slidesToShow: 1,
 		slidesToScroll: 1,
 		draggable: true,
 		loop:true,
+		arrows: true,
 		responsive: [
 			{
 				breakpoint: 991,
 				settings: {
-					slidesToShow: 2,
+					slidesToShow: 1,
 					slidesToScroll: 1,
 					infinite: true
 				}
@@ -58,8 +59,8 @@ jQuery(function($) {
 			{
 		      breakpoint: 600,
 		      settings: {
-		        slidesToShow: 2,
-		        slidesToScroll: 2
+		        slidesToShow: 1,
+		        slidesToScroll: 1
 		      }
 		    },
 		    {

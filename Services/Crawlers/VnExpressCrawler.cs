@@ -112,7 +112,7 @@ namespace NewsAggregator.Services.Crawlers
                     .SelectSingleNode(
                         "//p[@style='text-align:right;']//strong");
 
-                var content = contentNode?.InnerHtml ?? "";
+                var content = FixContentImages(contentNode?.InnerHtml ?? "");
                 var author  = authorNode?.InnerText?.Trim() ?? "VnExpress";
 
                 return (content, author);

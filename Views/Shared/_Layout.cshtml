@@ -34,6 +34,107 @@
     <link rel="stylesheet" href="~/plugins/slick-carousel/slick-theme.css">
     <!-- main stylesheet -->
     <link rel="stylesheet" href="~/css/style.css">
+    <!-- Google Font: Be Vietnam Pro (cho tiêu đề) -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        h1, h2, h3, .post-title, .news-title span { font-family: 'Be Vietnam Pro', sans-serif !important; }
+
+        /* ===== NAVBAR VNEXPRESS STYLE ===== */
+        .vne-navbar {
+            background: #1a1a1a;
+            display: flex;
+            align-items: stretch;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid #c0392b;
+        }
+        .vne-nav-inner {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        .vne-nav-list {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            scroll-behavior: smooth;
+        }
+        .vne-nav-list::-webkit-scrollbar { display: none; }
+        .vne-nav-list li { flex-shrink: 0; }
+        .vne-nav-list li a {
+            display: block;
+            padding: 13px 13px;
+            color: #ccc;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            white-space: nowrap;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            transition: color .2s;
+            border-bottom: 3px solid transparent;
+        }
+        .vne-nav-list li a:hover,
+        .vne-nav-list li.vne-active a {
+            color: #fff;
+            border-bottom-color: #e53935;
+        }
+        .vne-scroll-btn,
+        .vne-all-btn {
+            background: #1a1a1a;
+            border: none;
+            border-left: 1px solid rgba(255,255,255,.12);
+            color: #ccc;
+            padding: 0 14px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background .2s, color .2s;
+            flex-shrink: 0;
+        }
+        .vne-scroll-btn:hover, .vne-all-btn:hover {
+            background: rgba(255,255,255,.1);
+            color: #fff;
+        }
+        .vne-scroll-btn.vne-hidden { display: none; }
+        /* All-categories dropdown */
+        .vne-all-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            box-shadow: 0 6px 20px rgba(0,0,0,.15);
+            z-index: 1002;
+            min-width: 280px;
+            padding: 16px 20px;
+        }
+        .vne-all-dropdown.vne-open { display: block; }
+        .vne-all-dropdown ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px 12px;
+        }
+        .vne-all-dropdown ul li a {
+            display: block;
+            padding: 7px 4px;
+            color: #333;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .vne-all-dropdown ul li a:hover { color: #e53935; }
+    </style>
 
     @RenderSection("Styles", required: false)
 </head>
@@ -41,8 +142,14 @@
 
 <div class="trending-bar-dark hidden-xs">
     <div class="container">
-        <div class="row">
-            <div class="col-lg-6">
+        <div class="row align-items-center">
+            <div class="col-auto pr-3" style="border-right:1px solid rgba(255,255,255,.2)">
+                <a asp-controller="News" asp-action="Index">
+                    <img src="~/images/logos/footer-logo.png" alt="NewsBit"
+                         style="max-height:40px; width:auto; display:block;">
+                </a>
+            </div>
+            <div class="col-lg-5">
                 <h3 class="trending-bar-title">Trending News</h3>
                 <div class="trending-news-slider">
                     <div class="item">
@@ -69,7 +176,7 @@
                 </div>
             </div>
 
-            <div class="col-md-12 col-sm-12 col-xs-12 top-nav-social-lists text-lg-right col-lg-4 ml-lg-auto">
+            <div class="col top-nav-social-lists text-right ml-auto">
                 <ul class="list-unstyled mt-4 mt-lg-0">
                     <li>
                         @* Login/Logout của Bao — sp1 *@
@@ -124,92 +231,52 @@
     </div>
 </div>
 
-<header class="header-navigation d-none d-lg-block">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-xs-12 col-sm-3 col-md-3">
-                <!-- Logo -->
-                <div class="logo">
-                    <a asp-controller="News" asp-action="Index">
-                        <img src="~/images/logos/logo.png" alt="NewsBit">
-                    </a>
-                </div>
-                <!-- End Logo -->
-            </div>
-            <div class="col-xs-12 col-sm-9 col-md-9">
-                <div class="top-ad-banner float-right">
-                    <a href="#">
-                        <img src="~/images/news/ad-pro.png" class="img-fluid" alt="banner-ads">
-                    </a>
-                </div>
-            </div>
-        </div>
+
+@* ===== NAVBAR — VNEXPRESS STYLE ===== *@
+<nav class="vne-navbar" id="vneNavbar">
+    <div class="vne-nav-inner">
+        <ul class="vne-nav-list" id="vneNavList">
+            <li>
+                <a asp-controller="News" asp-action="Index">Trang chủ</a>
+            </li>
+            @if (ViewBag.Menus != null)
+            {
+                foreach (var menu in ViewBag.Menus)
+                {
+                    if (menu.MenuName != "Trang chủ")
+                    {
+                        <li>
+                            <a asp-controller="News"
+                               asp-action="Category"
+                               asp-route-id="@menu.MenuID">@menu.MenuName</a>
+                        </li>
+                    }
+                }
+            }
+        </ul>
     </div>
-</header>
-
-@* ===== NAVBAR — MENU ĐỘNG TỪ DB ===== *@
-<div class="main-navbar clearfix bg-dark">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-12">
-                <nav class="navbar navbar-expand-lg site-main-nav navigation">
-                    <a class="navbar-brand d-lg-none" asp-controller="News" asp-action="Index">
-                        <img src="~/images/logos/footer-logo.png" alt="">
-                    </a>
-                    <button class="navbar-toggler" type="button"
-                            data-toggle="collapse"
-                            data-target="#navbarSupportedContent">
-                        <span class="fa fa-bars"></span>
-                    </button>
-                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                        <ul class="navbar-nav mr-auto">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="News" asp-action="Index">
-                                    Trang chủ
-                                </a>
-                            </li>
-
-                            @* Menu động từ DB *@
-                            @if (ViewBag.Menus != null)
-                            {
-                                foreach (var menu in ViewBag.Menus)
-                                {
-                                    if (menu.MenuName != "Trang chủ")
-                                    {
-                                        <li class="nav-item">
-                                            <a class="nav-link"
-                                               asp-controller="News"
-                                               asp-action="Category"
-                                               asp-route-id="@menu.MenuID">
-                                                @menu.MenuName
-                                            </a>
-                                        </li>
-                                    }
-                                }
-                            }
-                        </ul>
-                        <div class="nav-search ml-auto d-none d-lg-block">
-                            <span id="search">
-                                <i class="fa fa-search"></i>
-                            </span>
-                        </div>
-                    </div>
-                </nav>
-
-                <form class="site-search"
-                      asp-controller="News" asp-action="Search" method="get">
-                    <input type="text" name="q"
-                           placeholder="Nhập từ khóa tìm kiếm..." autofocus="">
-                    <div class="search-close">
-                        <span class="close-search">
-                            <i class="fa fa-times"></i>
-                        </span>
-                    </div>
-                </form>
-            </div>
-        </div>
+    <button class="vne-scroll-btn" id="vneScrollBtn" title="Xem thêm">
+        <i class="fa fa-angle-right"></i>
+    </button>
+    <button class="vne-all-btn" id="vneAllBtn" title="Tất cả chuyên mục">
+        <i class="fa fa-bars"></i>
+    </button>
+    <div class="vne-all-dropdown" id="vneAllDropdown">
+        <ul>
+            <li><a asp-controller="News" asp-action="Index">Trang chủ</a></li>
+            @if (ViewBag.Menus != null)
+            {
+                foreach (var menu in ViewBag.Menus)
+                {
+                    if (menu.MenuName != "Trang chủ")
+                    {
+                        <li><a asp-controller="News" asp-action="Category" asp-route-id="@menu.MenuID">@menu.MenuName</a></li>
+                    }
+                }
+            }
+        </ul>
     </div>
-</div>
+</nav>
 
 @RenderBody()
 
@@ -267,6 +334,49 @@
 <script src="~/js/custom.js"></script>
 
 @RenderSection("Scripts", required: false)
+
+<script>
+(function () {
+    var list      = document.getElementById('vneNavList');
+    var scrollBtn = document.getElementById('vneScrollBtn');
+    var allBtn    = document.getElementById('vneAllBtn');
+    var dropdown  = document.getElementById('vneAllDropdown');
+    if (!list) return;
+
+    // Active state dựa trên URL hiện tại
+    var cur = window.location.pathname;
+    list.querySelectorAll('a').forEach(function (a) {
+        var p = new URL(a.href).pathname;
+        if (p === cur || (p.length > 1 && cur.startsWith(p))) {
+            a.parentElement.classList.add('vne-active');
+        }
+    });
+
+    function updateScrollBtn() {
+        var atEnd = list.scrollLeft + list.clientWidth >= list.scrollWidth - 4;
+        scrollBtn.classList.toggle('vne-hidden', atEnd);
+    }
+
+    scrollBtn.addEventListener('click', function () {
+        list.scrollBy({ left: 200, behavior: 'smooth' });
+    });
+
+    list.addEventListener('scroll', updateScrollBtn);
+    window.addEventListener('resize', updateScrollBtn);
+    updateScrollBtn();
+
+    allBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('vne-open');
+    });
+
+    document.addEventListener('click', function () {
+        dropdown.classList.remove('vne-open');
+    });
+
+    dropdown.addEventListener('click', function (e) { e.stopPropagation(); });
+})();
+</script>
 
 @* ===== CHATBOT WIDGET ===== *@
 <div id="chatbot-widget">

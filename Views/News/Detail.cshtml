@@ -1,9 +1,11 @@
 @model NewsAggregator.Models.Post
+@using System.Security.Claims
 
 @{
     ViewData["Title"] = Model.Title;
     var relatedPosts = ViewBag.RelatedPosts as List<NewsAggregator.Models.Post>
                        ?? new List<NewsAggregator.Models.Post>();
+    bool isSaved = ViewBag.IsSaved == true;
 }
 
 <section class="single-block-wrapper section-padding">
@@ -25,11 +27,36 @@
                             @Model.Menu?.MenuName
                         </a>
 
-                        @* Tiêu đề *@
+                        @* Tiêu đề + logo nguồn báo *@
                         <h2 class="post-title">@Model.Title</h2>
+                        @if (Model.Source != null && !string.IsNullOrEmpty(Model.Source.LogoUrl))
+                        {
+                            <div class="source-logo mb-2">
+                                <a href="@Model.Source.WebsiteUrl" target="_blank" rel="noopener"
+                                   title="@Model.Source.SourceName">
+                                    <img src="@Model.Source.LogoUrl"
+                                         alt="@Model.Source.SourceName"
+                                         style="max-height:28px; max-width:120px; object-fit:contain; vertical-align:middle;" />
+                                </a>
+                            </div>
+                        }
 
                         @* Thông tin meta *@
                         <div class="post-meta mb-3">
+                            @* Nút lưu bài viết *@
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <div class="mb-2">
+                                    <button id="btn-save-post"
+                                            class="btn btn-sm @(isSaved ? "btn-warning" : "btn-outline-warning")"
+                                            onclick="toggleSave(@Model.PostID)">
+                                        <i class="fa @(isSaved ? "fa-bookmark" : "fa-bookmark-o") mr-1"></i>
+                                        @(isSaved ? "Đã lưu" : "Lưu bài viết")
+                                    </button>
+                                    <span id="save-msg" class="ml-2 text-muted small"></span>
+                                </div>
+                            }
+
                             @* Nút TTS *@
                             <div class="tts-controls mt-3 mb-3">
                                 <button id="btn-play" onclick="startReading()" class="btn btn-primary btn-sm">
@@ -77,32 +104,25 @@
                     @* PHẦN THÂN BÀI VIẾT *@
                     <div class="post-body">
 
-                        @* Ảnh đại diện *@
-                        @if (!string.IsNullOrEmpty(Model.Images))
-                        {
-                            <div class="post-featured-image mb-4">
-                                <img src="@Model.Images"
-                                     class="img-fluid"
-                                     alt="@Model.Title">
-                            </div>
-                        }
-
-                        @* Nội dung bài viết
-                           Html.Raw() render HTML thay vì hiển thị thẻ HTML dạng text
-                           Vì Contents chứa HTML từ crawler nên cần Html.Raw() *@
+                        @* Nội dung bài viết *@
                         <div class="entry-content">
                             @if (!string.IsNullOrEmpty(Model.Contents))
                             {
+                                @* Bài có nội dung đầy đủ: ảnh nằm đúng vị trí trong content *@
                                 @Html.Raw(Model.Contents)
                             }
                             else
                             {
-                                @* Nếu không có nội dung đầy đủ thì hiển thị tóm tắt *@
+                                @* Bài chỉ có RSS summary: hiện thumbnail + tóm tắt + link gốc *@
+                                @if (!string.IsNullOrEmpty(Model.Images))
+                                {
+                                    <div class="post-featured-image mb-4">
+                                        <img src="@Model.Images" class="img-fluid" alt="@Model.Title">
+                                    </div>
+                                }
                                 <p>@Model.Abstract</p>
                                 <p>
-                                    <a href="@Model.Link"
-                                       target="_blank"
-                                       class="btn btn-primary">
+                                    <a href="@Model.Link" target="_blank" class="btn btn-primary">
                                         Đọc bài đầy đủ tại @Model.Source?.SourceName
                                         <i class="fa fa-external-link ml-2"></i>
                                     </a>
@@ -263,197 +283,354 @@
         </div>
     </div>
 </section>
+@section Styles {
+<style>
+    /* ===== Fix ảnh trong nội dung bài viết ===== */
+
+    /* Ảnh không bị tràn, giữ tỉ lệ */
+    .entry-content img {
+        max-width: 100% !important;
+        width: auto !important;
+        height: auto !important;
+        display: block;
+        margin: 12px auto;
+        border-radius: 4px;
+    }
+    /* Ảnh broken → ẩn đi */
+    .entry-content img.img-broken { display: none !important; }
+
+    /* Figure/picture: xóa khoảng trắng do fixed size */
+    .entry-content figure,
+    .entry-content picture {
+        max-width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 16px auto;
+        display: block;
+        text-align: center;
+    }
+    .entry-content figure * {
+        height: auto !important;
+        max-width: 100% !important;
+    }
+    .entry-content figcaption {
+        font-size: 13px;
+        color: #666;
+        margin-top: 6px;
+        font-style: italic;
+        text-align: center;
+    }
+    /* Xóa khoảng trắng của các wrapper ảnh phổ biến */
+    .entry-content .VCSortableInPreviewMode,
+    .entry-content .box_content_detail,
+    .entry-content .fig-picture,
+    .entry-content [data-type="Photo"],
+    .entry-content .article-body-image-wrapper,
+    .entry-content .item_slide_show,
+    .entry-content .imagefull,
+    .entry-content .image_article {
+        height: auto !important;
+        min-height: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    /* Ảnh đại diện đầu bài */
+    .post-featured-image img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 6px;
+    }
+    .source-logo img { opacity: 0.85; }
+    .source-logo img:hover { opacity: 1; }
+</style>
+}
 @section Scripts {
 <script>
-    let audioQueue = [];
-    let isPlaying  = false;
-    let isStopped  = false;
+    // --- State ---
+    let audioQueue   = [];   // danh sách URL audio đã tạo
+    let currentAudio = null; // Audio object đang phát (để pause/stop thực sự)
+    let isPaused     = false;
+    let isStopped    = false;
+    let currentIndex = 0;
 
-    async function startReading() {
-        if (isPlaying) {
-            pauseReading();
-            return;
-        }
-
-        // Lấy nội dung bài viết — bỏ qua ảnh
+    // --- Lấy nội dung bài viết dưới dạng plain-text gửi lên server làm sạch ---
+    function getRawContent() {
         const title    = document.querySelector('.post-title')?.innerText ?? '';
-        const abstract = document.querySelector('.post-header p')?.innerText ?? '';
+        const abstract = document.querySelector('.post-header > p')?.innerText ?? '';
+        const body     = document.querySelector('.entry-content')?.innerHTML ?? '';
+        return `${title}. ${abstract}. ${body}`;
+    }
 
-        const paragraphs = document.querySelectorAll('.entry-content p');
-        let contentText  = '';
-        paragraphs.forEach(p => { contentText += p.innerText + ' '; });
+    // --- Nút Đọc bài viết ---
+    async function startReading() {
+        if (isPaused) { resumeReading(); return; }
 
-        const fullText = `${title}. ${abstract}. ${contentText}`.trim();
+        isStopped    = false;
+        isPaused     = false;
+        currentIndex = 0;
+        audioQueue   = [];
 
-        if (!fullText) {
-            setStatus('Không có nội dung!');
-            return;
-        }
+        const rawContent = getRawContent();
+        if (!rawContent.trim()) { setStatus('Không có nội dung!'); return; }
 
-        // Chia bài thành các đoạn 300 ký tự
-        const chunks = splitText(fullText, 300);
-        setStatus(`Đang tạo audio (0/${chunks.length} đoạn)...`);
+        // Chia thành các đoạn 300 ký tự
+        const chunks = splitText(rawContent, 300);
         updateButtons('loading');
-        isStopped  = false;
-        audioQueue = [];
+        setStatus(`Đang tạo audio (0/${chunks.length} đoạn)...`);
 
-        // Tạo audio cho từng đoạn
         for (let i = 0; i < chunks.length; i++) {
             if (isStopped) break;
-
             setStatus(`Đang tạo audio (${i + 1}/${chunks.length} đoạn)...`);
-
             try {
-                const response = await fetch('/Tts/Speak', {
+                const res  = await fetch('/Tts/Speak', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: chunks[i], voice: 'banmai' })
                 });
-                const data = await response.json();
+                const data = await res.json();
                 if (data.audioUrl) audioQueue.push(data.audioUrl);
             } catch (e) {
-                console.log(`[TTS] Lỗi đoạn ${i + 1}: ${e.message}`);
+                console.warn(`[TTS] Lỗi đoạn ${i + 1}:`, e);
             }
         }
 
         if (audioQueue.length === 0) {
-            setStatus('Lỗi tạo audio!');
-            updateButtons('stopped');
-            return;
+            setStatus('Lỗi tạo audio!'); updateButtons('stopped'); return;
         }
 
-        // Chờ FPT AI xử lý tất cả đoạn
         setStatus('Đang tải audio...');
-        await delay(4000);
+        await delay(3000);
 
-        // Phát lần lượt từng đoạn
-        isPlaying = true;
         updateButtons('playing');
-        await playQueue(0);
+        await playFrom(0);
     }
 
-    // Phát từng đoạn trong hàng đợi
-    async function playQueue(index) {
+    // --- Phát từ index ---
+    async function playFrom(index) {
         if (isStopped || index >= audioQueue.length) {
-            if (!isStopped) {
-                isPlaying = false;
-                updateButtons('stopped');
-                setStatus('Đã đọc xong! ');
-            }
+            if (!isStopped) { updateButtons('stopped'); setStatus('Đã đọc xong!'); }
             return;
         }
 
+        currentIndex = index;
         setStatus(`Đang đọc... (${index + 1}/${audioQueue.length})`);
 
-        return new Promise((resolve) => {
-            const audio = new Audio(audioQueue[index]);
+        await new Promise((resolve) => {
+            const audio  = new Audio(audioQueue[index]);
+            currentAudio = audio;
 
             audio.onended = async () => {
-                await delay(300);
-                await playQueue(index + 1);
+                currentAudio = null;
+                if (!isStopped && !isPaused) {
+                    await delay(300);
+                    await playFrom(index + 1);
+                }
                 resolve();
             };
 
             audio.onerror = async () => {
-                await delay(2000);
-                audio.load();
-                audio.play().catch(async () => {
-                    await playQueue(index + 1);
-                    resolve();
-                });
+                currentAudio = null;
+                await delay(1500);
+                if (!isStopped && !isPaused) await playFrom(index + 1);
+                resolve();
             };
 
             audio.play().catch(async () => {
-                await delay(2000);
-                await playQueue(index + 1);
+                currentAudio = null;
+                await delay(1500);
+                if (!isStopped && !isPaused) await playFrom(index + 1);
                 resolve();
             });
         });
     }
 
-    // Chia text thành các đoạn không quá maxLen ký tự
-    // Cắt tại dấu câu để nghe tự nhiên hơn
-    function splitText(text, maxLen) {
-        const chunks    = [];
-        let remaining   = text.trim();
-
-        while (remaining.length > 0) {
-            if (remaining.length <= maxLen) {
-                chunks.push(remaining);
-                break;
-            }
-
-            let cutAt           = maxLen;
-            const punctuation   = ['. ', '! ', '? ', ', ', '; '];
-
-            for (const p of punctuation) {
-                const idx = remaining.lastIndexOf(p, maxLen);
-                if (idx > maxLen * 0.5) {
-                    cutAt = idx + p.length;
-                    break;
-                }
-            }
-
-            chunks.push(remaining.substring(0, cutAt).trim());
-            remaining = remaining.substring(cutAt).trim();
-        }
-
-        return chunks.filter(c => c.length > 0);
-    }
-
+    // --- Tạm dừng: dừng audio đang phát, giữ vị trí ---
     function pauseReading() {
-        isStopped = true;
-        isPlaying = false;
-        updateButtons('stopped');
-        setStatus('Đã dừng — bấm lại để đọc từ đầu');
+        isPaused = true;
+        if (currentAudio) {
+            currentAudio.pause();
+        }
+        updateButtons('paused');
+        setStatus('Đã tạm dừng — nhấn Tiếp tục để nghe tiếp');
     }
 
+    // --- Tiếp tục từ đoạn đang dừng ---
+    async function resumeReading() {
+        isPaused = false;
+        updateButtons('playing');
+        if (currentAudio) {
+            // Tiếp tục audio đang pause (nếu còn)
+            currentAudio.play().catch(() => {});
+        } else {
+            // Phát lại từ đoạn hiện tại
+            await playFrom(currentIndex);
+        }
+    }
+
+    // --- Dừng hẳn ---
     function stopReading() {
-        isStopped  = true;
-        isPlaying  = false;
-        audioQueue = [];
+        isStopped    = true;
+        isPaused     = false;
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.src = '';
+            currentAudio = null;
+        }
+        audioQueue   = [];
+        currentIndex = 0;
         updateButtons('stopped');
         setStatus('');
     }
 
-    function delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    function splitText(text, maxLen) {
+        const chunks    = [];
+        let remaining   = text.trim();
+        while (remaining.length > 0) {
+            if (remaining.length <= maxLen) { chunks.push(remaining); break; }
+            let cutAt = maxLen;
+            for (const p of ['. ', '! ', '? ', ', ', '; ']) {
+                const idx = remaining.lastIndexOf(p, maxLen);
+                if (idx > maxLen * 0.5) { cutAt = idx + p.length; break; }
+            }
+            chunks.push(remaining.substring(0, cutAt).trim());
+            remaining = remaining.substring(cutAt).trim();
+        }
+        return chunks.filter(c => c.length > 0);
     }
 
-    function setStatus(msg) {
-        document.getElementById('tts-status').innerText = msg;
-    }
+    function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function setStatus(msg) { document.getElementById('tts-status').innerText = msg; }
 
     function updateButtons(state) {
         const btnPlay  = document.getElementById('btn-play');
         const btnPause = document.getElementById('btn-pause');
         const btnStop  = document.getElementById('btn-stop');
 
+        btnPlay.style.display  = 'none';
+        btnPause.style.display = 'none';
+        btnStop.style.display  = 'none';
+        btnPlay.disabled = false;
+
         if (state === 'loading') {
+            btnPlay.style.display = 'inline-block';
             btnPlay.disabled      = true;
             btnPlay.innerHTML     = '<i class="fa fa-spinner fa-spin mr-1"></i> Đang tải...';
             btnStop.style.display = 'inline-block';
         } else if (state === 'playing') {
-            btnPlay.style.display  = 'none';
-            btnPlay.disabled       = false;
             btnPause.style.display = 'inline-block';
             btnStop.style.display  = 'inline-block';
         } else if (state === 'paused') {
-            btnPlay.innerHTML      = '<i class="fa fa-play mr-1"></i> Tiếp tục';
             btnPlay.style.display  = 'inline-block';
-            btnPlay.disabled       = false;
-            btnPause.style.display = 'none';
+            btnPlay.innerHTML      = '<i class="fa fa-play mr-1"></i> Tiếp tục';
             btnStop.style.display  = 'inline-block';
         } else {
-            btnPlay.innerHTML      = '<i class="fa fa-volume-up mr-1"></i> Đọc bài viết';
-            btnPlay.style.display  = 'inline-block';
-            btnPlay.disabled       = false;
-            btnPause.style.display = 'none';
-            btnStop.style.display  = 'none';
+            btnPlay.style.display = 'inline-block';
+            btnPlay.innerHTML     = '<i class="fa fa-volume-up mr-1"></i> Đọc bài viết';
         }
     }
 
-    // Dừng audio khi chuyển trang
+    // Sửa lại onclick của nút Play để xử lý cả resume
+    document.getElementById('btn-play').onclick = startReading;
+
+    // ===== Fix lazy-loaded images + blank spaces trong nội dung bài viết =====
+    (function fixLazyImages() {
+        const entryContent = document.querySelector('.entry-content');
+        if (!entryContent) return;
+
+        // Xóa height inline trên TẤT CẢ wrapper ảnh phổ biến (VnExpress, TuoiTre, DanTri...)
+        const wrapperSel = 'figure, picture, .VCSortableInPreviewMode, .box_content_detail, ' +
+                           '.fig-picture, [data-type="Photo"], .article-body-image-wrapper, ' +
+                           '.item_slide_show, .imagefull, .image_article';
+        entryContent.querySelectorAll(wrapperSel).forEach(el => {
+            el.style.height    = '';
+            el.style.minHeight = '';
+            el.style.paddingTop = '';
+            el.removeAttribute('height');
+        });
+
+        // Khi ảnh lỗi: ẩn ảnh + collapse wrapper để không còn khoảng trắng
+        function collapseWrapper(img) {
+            let el = img.parentElement;
+            while (el && el !== entryContent) {
+                el.style.height    = '';
+                el.style.minHeight = '';
+                el.style.paddingTop = '';
+                el.removeAttribute('height');
+                if (el.tagName === 'FIGURE' || el.tagName === 'PICTURE') {
+                    el.style.display = 'none';
+                    return;
+                }
+                el = el.parentElement;
+            }
+        }
+
+        entryContent.querySelectorAll('img').forEach(img => {
+            const src     = (img.getAttribute('src') || '').trim();
+            const isEmpty = !src || src === 'about:blank'
+                         || src === window.location.href
+                         || src.startsWith('data:image/gif');
+
+            if (isEmpty) {
+                const real = img.dataset.src
+                          || img.dataset.original
+                          || img.dataset.lazySrc
+                          || img.dataset.lazy
+                          || img.getAttribute('data-src')
+                          || img.getAttribute('data-original');
+                if (real) {
+                    img.setAttribute('referrerpolicy', 'no-referrer');
+                    img.src = real;
+                } else {
+                    img.classList.add('img-broken');
+                    collapseWrapper(img);
+                }
+            }
+
+            // Ảnh lỗi load (404, hotlink blocked...) → ẩn + collapse wrapper
+            img.addEventListener('error', function () {
+                this.classList.add('img-broken');
+                collapseWrapper(this);
+            });
+
+            img.removeAttribute('width');
+            img.removeAttribute('height');
+        });
+    })();
+
     window.addEventListener('beforeunload', stopReading);
+
+    // --- Lưu / bỏ lưu bài viết ---
+    let _isSaved = @(isSaved ? "true" : "false");
+
+    async function toggleSave(postId) {
+        const btn     = document.getElementById('btn-save-post');
+        const msg     = document.getElementById('save-msg');
+        const action  = _isSaved ? '/SavedPosts/Remove' : '/SavedPosts/Save';
+        const token   = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+        btn.disabled = true;
+        try {
+            const res  = await fetch(action, {
+                method : 'POST',
+                headers: {
+                    'Content-Type'           : 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `postId=${postId}&__RequestVerificationToken=${encodeURIComponent(token)}`
+            });
+            const data = await res.json();
+            msg.textContent = data.message;
+
+            if (data.success) {
+                _isSaved = !_isSaved;
+                btn.className = _isSaved ? 'btn btn-sm btn-warning' : 'btn btn-sm btn-outline-warning';
+                btn.innerHTML = `<i class="fa ${_isSaved ? 'fa-bookmark' : 'fa-bookmark-o'} mr-1"></i>${_isSaved ? 'Đã lưu' : 'Lưu bài viết'}`;
+            }
+        } catch (e) {
+            msg.textContent = 'Lỗi kết nối!';
+        }
+        btn.disabled = false;
+        setTimeout(() => msg.textContent = '', 3000);
+    }
 </script>
 }

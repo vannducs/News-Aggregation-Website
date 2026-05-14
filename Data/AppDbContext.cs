@@ -14,6 +14,7 @@ namespace NewsAggregator.Data
         public DbSet<AISummary> AISummaries {get; set;}
         public DbSet<AppUser> AppUsers { get; set; }
         public DbSet<Comment> Comments { get; set; }
+        public DbSet<SavedPost> SavedPosts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,6 +50,21 @@ namespace NewsAggregator.Data
                 .WithMany(u => u.Comments)
                 .HasForeignKey(c => c.UserID)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<SavedPost>().ToTable("tblSavedPosts");
+            modelBuilder.Entity<SavedPost>()
+                .HasIndex(s => new { s.UserID, s.PostID })
+                .IsUnique();
+            modelBuilder.Entity<SavedPost>()
+                .HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserID)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<SavedPost>()
+                .HasOne(s => s.Post)
+                .WithMany()
+                .HasForeignKey(s => s.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
