@@ -69,10 +69,6 @@ public class PostsController : Controller
         return View(posts);
     }
 
-<<<<<<< HEAD
-=======
-    // POST: /Admin/Posts/ToggleActive/5
->>>>>>> c35ec084cde14590358c86fe0f9b2fe03f343315
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleActive(int id)
@@ -90,10 +86,6 @@ public class PostsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-<<<<<<< HEAD
-=======
-    // POST: /Admin/Posts/Delete/5  — soft delete
->>>>>>> c35ec084cde14590358c86fe0f9b2fe03f343315
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
@@ -111,10 +103,6 @@ public class PostsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-<<<<<<< HEAD
-=======
-    // POST: /Admin/Posts/FixAllImages — chạy background job sửa ảnh toàn bộ bài cũ
->>>>>>> c35ec084cde14590358c86fe0f9b2fe03f343315
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Roles = UserRoles.Admin)]
