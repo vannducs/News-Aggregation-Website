@@ -16,7 +16,7 @@ namespace NewsAggregator.Controllers
             var posts = await PostSummaryQuery()
                 .Where(p => p.IsActive && !p.IsDeleted)
                 .OrderByDescending(p => p.CreatedDate)
-                .Take(20)
+                .Take(44)
                 .ToListAsync();
 
             return View(posts);

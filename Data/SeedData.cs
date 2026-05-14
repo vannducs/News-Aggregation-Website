@@ -200,7 +200,7 @@ namespace NewsAggregator.Data
                     });
                 }
 
-                if (comments.Any())
+                if (comments.Count > 0)
                 {
                     context.Comments.AddRange(comments);
                     await context.SaveChangesAsync();
@@ -245,7 +245,9 @@ namespace NewsAggregator.Data
                       PostID INT NOT NULL,
                       SavedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
                       CONSTRAINT UQ_SavedPosts UNIQUE (UserID, PostID)
-                  );"
+                  );",
+                @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_tblPost_Listing' AND object_id = OBJECT_ID('tblPost'))
+                  CREATE INDEX IX_tblPost_Listing ON tblPost (IsDeleted, IsActive, CreatedDate DESC);"
             };
 
             foreach (var command in commands)

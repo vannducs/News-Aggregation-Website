@@ -1,9 +1,10 @@
 @model List<NewsAggregator.Models.Post>
 @{
     ViewData["Title"] = "Trang chủ";
-    List<Post>? featuredPosts = Model.Take(4).ToList();
-    List<Post>? editorPosts   = Model.Skip(4).Take(8).ToList();
-    List<Post>? latestPosts   = Model.Skip(12).ToList();
+    List<Post>? featuredPosts  = Model.Take(4).ToList();
+    List<Post>? editorPosts    = Model.Skip(4).Take(20).ToList();
+    List<Post>? latestPosts    = Model.Skip(24).ToList();
+    int featuredPageCount = editorPosts.Count == 0 ? 0 : (int)Math.Ceiling(editorPosts.Count / 4.0);
 }
 
 @* ===== FEATURED POSTS ===== *@
@@ -128,99 +129,61 @@
     <div class="container">
         <div class="row">
 
-            @* Cột chính — bài viết nổi bật (slider, 4 bài/slide theo dạng 2×2) *@
+            @* Cột chính — bài viết nổi bật (4 bài/trang, JS pagination) *@
             <div class="col-lg-8 col-md-12 col-sm-12 col-xs-12">
                 <div class="news-style-one">
-                    <h3 class="news-title"><span>Bài viết nổi bật</span></h3>
-                    <div class="news-style-one-slide">
-                        @* Slide 1: bài 0–3 *@
-                        <div>
-                            <div class="row">
-                                @for (int i = 0; i < 4 && i < editorPosts.Count; i++)
-                                {
-                                    var p = editorPosts[i];
-                                    <div class="col-sm-6 mb-4">
-                                        <div class="post-block-wrapper clearfix">
-                                            <div class="post-thumbnail">
-                                                <a asp-controller="News"
-                                                   asp-action="Detail"
-                                                   asp-route-id="@p.PostID">
-                                                    <img class="img-fluid"
-                                                         src="@(string.IsNullOrEmpty(p.Images) ? "/images/news/news-01.jpg" : p.Images)"
-                                                         alt="@p.Title" />
-                                                </a>
-                                            </div>
-                                            <div class="post-content">
-                                                <a class="post-category"
-                                                   asp-controller="News"
-                                                   asp-action="Category"
-                                                   asp-route-id="@p.MenuID">
-                                                    @p.Menu?.MenuName
-                                                </a>
-                                                <h2 class="post-title title-sm mt-2">
-                                                    <a asp-controller="News"
-                                                       asp-action="Detail"
-                                                       asp-route-id="@p.PostID">
-                                                        @p.Title
-                                                    </a>
-                                                </h2>
-                                                <p class="text-muted small mt-1">@p.Abstract</p>
-                                                <div class="post-meta">
-                                                    <span class="posted-time">
-                                                        <i class="fa fa-clock-o mr-1"></i>
-                                                        @p.CreatedDate.ToString("dd/MM/yyyy HH:mm")
-                                                    </span>
-                                                </div>
-                                            </div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h3 class="news-title mb-0"><span>Bài viết nổi bật</span></h3>
+                        @if (featuredPageCount > 1)
+                        {
+                            <button id="featuredNextBtn"
+                                    type="button"
+                                    onclick="featuredNextPage()"
+                                    style="width:32px;height:32px;border-radius:50%;background:#e8282b;color:#fff;border:none;cursor:pointer;font-size:14px;line-height:1;padding:0;transition:background .2s"
+                                    onmouseover="this.style.background='#b01e21'"
+                                    onmouseout="this.style.background='#e8282b'"
+                                    title="Xem trang tiếp">
+                                <i class="fa fa-chevron-right"></i>
+                            </button>
+                        }
+                    </div>
+                    <div id="featuredGrid" class="row mt-3">
+                        @for (int i = 0; i < editorPosts.Count; i++)
+                        {
+                            var p = editorPosts[i];
+                            var pageIdx = i / 4;
+                            <div class="col-sm-6 mb-4 featured-item@(pageIdx > 0 ? " d-none" : "")" data-fp="@pageIdx">
+                                <div class="post-block-wrapper clearfix">
+                                    <div class="post-thumbnail">
+                                        <a asp-controller="News" asp-action="Detail" asp-route-id="@p.PostID">
+                                            <img class="img-fluid"
+                                                 src="@(string.IsNullOrEmpty(p.Images) ? "/images/news/news-01.jpg" : p.Images)"
+                                                 alt="@p.Title" />
+                                        </a>
+                                    </div>
+                                    <div class="post-content">
+                                        <a class="post-category"
+                                           asp-controller="News"
+                                           asp-action="Category"
+                                           asp-route-id="@p.MenuID">
+                                            @p.Menu?.MenuName
+                                        </a>
+                                        <h2 class="post-title title-sm mt-2">
+                                            <a asp-controller="News" asp-action="Detail" asp-route-id="@p.PostID">
+                                                @p.Title
+                                            </a>
+                                        </h2>
+                                        @if (!string.IsNullOrEmpty(p.Abstract))
+                                        {
+                                            <p class="text-muted small mt-1" style="overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">@p.Abstract</p>
+                                        }
+                                        <div class="post-meta">
+                                            <span class="posted-time">
+                                                <i class="fa fa-clock-o mr-1"></i>
+                                                @p.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                                            </span>
                                         </div>
                                     </div>
-                                }
-                            </div>
-                        </div>
-                        @* Slide 2: bài 4–7 *@
-                        @if (editorPosts.Count > 4)
-                        {
-                            <div>
-                                <div class="row">
-                                    @for (int i = 4; i < 8 && i < editorPosts.Count; i++)
-                                    {
-                                        var p = editorPosts[i];
-                                        <div class="col-sm-6 mb-4">
-                                            <div class="post-block-wrapper clearfix">
-                                                <div class="post-thumbnail">
-                                                    <a asp-controller="News"
-                                                       asp-action="Detail"
-                                                       asp-route-id="@p.PostID">
-                                                        <img class="img-fluid"
-                                                             src="@(string.IsNullOrEmpty(p.Images) ? "/images/news/news-01.jpg" : p.Images)"
-                                                             alt="@p.Title" />
-                                                    </a>
-                                                </div>
-                                                <div class="post-content">
-                                                    <a class="post-category"
-                                                       asp-controller="News"
-                                                       asp-action="Category"
-                                                       asp-route-id="@p.MenuID">
-                                                        @p.Menu?.MenuName
-                                                    </a>
-                                                    <h2 class="post-title title-sm mt-2">
-                                                        <a asp-controller="News"
-                                                           asp-action="Detail"
-                                                           asp-route-id="@p.PostID">
-                                                            @p.Title
-                                                        </a>
-                                                    </h2>
-                                                    <p class="text-muted small mt-1">@p.Abstract</p>
-                                                    <div class="post-meta">
-                                                        <span class="posted-time">
-                                                            <i class="fa fa-clock-o mr-1"></i>
-                                                            @p.CreatedDate.ToString("dd/MM/yyyy HH:mm")
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
                                 </div>
                             </div>
                         }
@@ -274,6 +237,26 @@
         </div>
     </div>
 </section>
+
+@* ===== FEATURED PAGINATION JS ===== *@
+@if (featuredPageCount > 1)
+{
+    <script>
+        (function () {
+            var cur = 0;
+            var total = @featuredPageCount;
+            window.featuredNextPage = function () {
+                document.querySelectorAll('#featuredGrid .featured-item').forEach(function (el) {
+                    el.classList.add('d-none');
+                });
+                cur = (cur + 1) % total;
+                document.querySelectorAll('#featuredGrid .featured-item[data-fp="' + cur + '"]').forEach(function (el) {
+                    el.classList.remove('d-none');
+                });
+            };
+        })();
+    </script>
+}
 
 @* ===== LATEST ARTICLES ===== *@
 <section class="section-padding">
