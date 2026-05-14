@@ -17,6 +17,10 @@ public class SourceController : Controller
         _db = db;
     }
 
+<<<<<<< HEAD
+=======
+    // GET: /Admin/Source
+>>>>>>> c35ec084cde14590358c86fe0f9b2fe03f343315
     public async Task<IActionResult> Index()
     {
         ViewData["Title"] = "Quản lý nguồn báo";
@@ -29,18 +33,30 @@ public class SourceController : Controller
         return View(sources);
     }
 
+<<<<<<< HEAD
+=======
+    // GET: /Admin/Source/Create
+>>>>>>> c35ec084cde14590358c86fe0f9b2fe03f343315
     public IActionResult Create()
     {
         ViewData["Title"] = "Thêm nguồn báo";
         return View();
     }
 
+<<<<<<< HEAD
+=======
+    // POST: /Admin/Source/Create
+>>>>>>> c35ec084cde14590358c86fe0f9b2fe03f343315
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Source source)
     {
         if (ModelState.IsValid)
         {
+<<<<<<< HEAD
+=======
+            // Kiểm tra tên nguồn đã tồn tại chưa
+>>>>>>> c35ec084cde14590358c86fe0f9b2fe03f343315
             bool exists = await _db.Sources
                 .AnyAsync(s => s.SourceName == source.SourceName);
 
@@ -51,10 +67,18 @@ public class SourceController : Controller
                 return View(source);
             }
 
+<<<<<<< HEAD
+=======
+            // Lưu vào DB
+>>>>>>> c35ec084cde14590358c86fe0f9b2fe03f343315
             source.IsActive = true;
             _db.Sources.Add(source);
             await _db.SaveChangesAsync();
 
+<<<<<<< HEAD
+=======
+            // Trigger crawl ngay sau khi thêm thành công
+>>>>>>> c35ec084cde14590358c86fe0f9b2fe03f343315
             Hangfire.BackgroundJob.Enqueue<Services.CrawlerService>(
                 service => service.RunAllAsync());
 
