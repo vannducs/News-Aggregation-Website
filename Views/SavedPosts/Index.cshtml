@@ -1,0 +1,179 @@
+@model List<NewsAggregator.Models.SavedPost>
+@{
+    ViewData["Title"] = "Bài viết đã lưu";
+}
+
+@* Token cho AJAX bỏ lưu *@
+@Html.AntiForgeryToken()
+
+<section class="section-padding">
+    <div class="container">
+        <div class="row">
+
+            @* ===== SIDEBAR TRÁI ===== *@
+            <div class="col-lg-3 col-md-4 mb-4">
+                <partial name="_ProfileSidebar" />
+            </div>
+
+            @* ===== NỘI DUNG CHÍNH ===== *@
+            <div class="col-lg-9 col-md-8">
+
+                <h4 class="news-title mb-4">
+                    <span><i class="fa fa-bookmark mr-2"></i>Bài viết đã lưu</span>
+                </h4>
+
+                <div id="saved-posts-list" class="row">
+                    @if (!Model.Any())
+                    {
+                        <div class="col-12" id="empty-state">
+                            <div class="text-center py-5">
+                                <i class="fa fa-bookmark-o fa-3x text-muted mb-3 d-block"></i>
+                                <p class="text-muted mb-3">Bạn chưa lưu bài viết nào.</p>
+                                <a asp-controller="News" asp-action="Index" class="btn btn-primary">
+                                    <i class="fa fa-newspaper-o mr-1"></i>Khám phá tin tức
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model)
+                        {
+                            var post = item.Post;
+                            if (post == null) continue;
+                            <div class="col-md-6 mb-4 saved-post-card" data-post-id="@post.PostID">
+                                <div class="card h-100 shadow-sm">
+                                    @if (!string.IsNullOrEmpty(post.Images))
+                                    {
+                                        <a asp-controller="News" asp-action="Detail" asp-route-id="@post.PostID">
+                                            <img src="@post.Images" class="card-img-top"
+                                                 alt="@post.Title"
+                                                 referrerpolicy="no-referrer"
+                                                 style="height:180px;object-fit:cover;" />
+                                        </a>
+                                    }
+                                    <div class="card-body d-flex flex-column">
+                                        @if (post.Menu != null)
+                                        {
+                                            <a asp-controller="News" asp-action="Category" asp-route-id="@post.MenuID"
+                                               class="badge badge-primary mb-2" style="width:fit-content;font-size:11px;">
+                                                @post.Menu.MenuName
+                                            </a>
+                                        }
+                                        <h6 class="card-title flex-grow-1">
+                                            <a asp-controller="News" asp-action="Detail" asp-route-id="@post.PostID"
+                                               class="text-dark">
+                                                @post.Title
+                                            </a>
+                                        </h6>
+                                        <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                                            <small class="text-muted">
+                                                <i class="fa fa-clock-o mr-1"></i>
+                                                Đã lưu @item.SavedAt.ToString("dd/MM/yyyy")
+                                            </small>
+                                            <div class="btn-group btn-group-sm">
+                                                <a asp-controller="News" asp-action="Detail" asp-route-id="@post.PostID"
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="fa fa-eye mr-1"></i>Xem
+                                                </a>
+                                                <button type="button"
+                                                        class="btn btn-outline-danger btn-sm btn-unsave"
+                                                        onclick="removeSavedPost(@post.PostID, this)">
+                                                    <i class="fa fa-bookmark-o mr-1"></i>Bỏ lưu
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+@* Toast notification *@
+<div id="saved-toast" style="
+    position:fixed; bottom:24px; right:24px; z-index:9999;
+    min-width:240px; max-width:320px;
+    padding:12px 18px; border-radius:8px;
+    font-size:14px; font-weight:500;
+    box-shadow:0 4px 16px rgba(0,0,0,.18);
+    opacity:0; transition:opacity .3s ease;
+    pointer-events:none;
+"></div>
+
+@section Scripts {
+<script>
+    const _csrfToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+    async function removeSavedPost(postId, btnEl) {
+        const card = btnEl.closest('.saved-post-card');
+        btnEl.disabled = true;
+        btnEl.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>Đang xử lý...';
+
+        try {
+            const res  = await fetch('/SavedPosts/Remove', {
+                method : 'POST',
+                headers: {
+                    'Content-Type'            : 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': _csrfToken
+                },
+                body: `postId=${postId}&__RequestVerificationToken=${encodeURIComponent(_csrfToken)}`
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                card.style.transition = 'opacity .35s, transform .35s';
+                card.style.opacity    = '0';
+                card.style.transform  = 'scale(0.95)';
+                setTimeout(() => {
+                    card.remove();
+                    const remaining = document.querySelectorAll('.saved-post-card').length;
+                    if (remaining === 0) showEmptyState();
+                }, 350);
+                showToast('Đã bỏ lưu bài viết thành công!', true);
+            } else {
+                showToast(data.message || 'Có lỗi xảy ra!', false);
+                btnEl.disabled = false;
+                btnEl.innerHTML = '<i class="fa fa-bookmark-o mr-1"></i>Bỏ lưu';
+            }
+        } catch {
+            showToast('Lỗi kết nối!', false);
+            btnEl.disabled = false;
+            btnEl.innerHTML = '<i class="fa fa-bookmark-o mr-1"></i>Bỏ lưu';
+        }
+    }
+
+    function showEmptyState() {
+        const list = document.getElementById('saved-posts-list');
+        list.innerHTML = `
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fa fa-bookmark-o fa-3x text-muted mb-3 d-block"></i>
+                    <p class="text-muted mb-3">Bạn chưa lưu bài viết nào.</p>
+                    <a href="/News" class="btn btn-primary">
+                        <i class="fa fa-newspaper-o mr-1"></i>Khám phá tin tức
+                    </a>
+                </div>
+            </div>`;
+    }
+
+    function showToast(msg, success) {
+        const toast = document.getElementById('saved-toast');
+        toast.textContent = msg;
+        toast.style.background = success ? '#28a745' : '#dc3545';
+        toast.style.color      = '#fff';
+        toast.style.opacity    = '1';
+        toast.style.pointerEvents = 'auto';
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.pointerEvents = 'none';
+        }, 3000);
+    }
+</script>
+}

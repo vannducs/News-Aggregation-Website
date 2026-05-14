@@ -1,0 +1,64 @@
+@model NewsAggregator.Models.ViewModels.CategoryViewModel
+@{
+    ViewData["Title"] = Model.CurrentMenu?.MenuName ?? "Chuyen muc";
+}
+
+<section class="section-padding">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="mb-4">
+                    <h1 class="mb-2">@Model.CurrentMenu?.MenuName</h1>
+                    <p class="text-muted mb-0">Tong hop bai viet theo chuyen muc.</p>
+                </div>
+
+                @if (Model.Posts.Any())
+                {
+                    @foreach (var post in Model.Posts)
+                    {
+                        <article class="post-block-wrapper post-float clearfix mb-4">
+                            <div class="post-thumbnail">
+                                <a asp-controller="Posts" asp-action="Details" asp-route-id="@post.PostID">
+                                    <img class="img-fluid" src="@(string.IsNullOrWhiteSpace(post.Images) ? "/images/news/news-05.jpg" : post.Images)" alt="@post.Title" />
+                                </a>
+                            </div>
+                            <div class="post-content">
+                                <h2 class="post-title">
+                                    <a asp-controller="Posts" asp-action="Details" asp-route-id="@post.PostID">@post.Title</a>
+                                </h2>
+                                <div class="post-meta mb-2">
+                                    <span class="posted-time"><i class="fa fa-clock-o mr-2"></i>@post.CreatedDate.ToString("dd/MM/yyyy HH:mm")</span>
+                                    <span class="post-author">Tac gia: @(post.Author ?? "Ban bien tap")</span>
+                                </div>
+                                <p>@(string.IsNullOrWhiteSpace(post.Abstract) ? "Xem chi tiet de doc day du noi dung." : post.Abstract)</p>
+                                <a asp-controller="Posts" asp-action="Details" asp-route-id="@post.PostID" class="btn btn-sm btn-outline-primary">Doc chi tiet</a>
+                            </div>
+                        </article>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-info">Chua co bai viet nao trong chuyen muc nay.</div>
+                }
+            </div>
+
+            <div class="col-lg-4">
+                <div class="sidebar sidebar-right">
+                    <div class="widget">
+                        <h3 class="news-title"><span>Chuyen muc khac</span></h3>
+                        <ul class="list-group">
+                            @foreach (var menu in Model.Menus)
+                            {
+                                <li class="list-group-item @(menu.MenuID == Model.CurrentMenu?.MenuID ? "active" : null)">
+                                    <a class="@(menu.MenuID == Model.CurrentMenu?.MenuID ? "text-white" : null)" asp-controller="Home" asp-action="Category" asp-route-id="@menu.MenuID">
+                                        @menu.MenuName
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,275 @@
+@{
+    ViewData["Title"] = "Thùng rác";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+    var deletedPosts   = ViewBag.DeletedPosts   as List<NewsAggregator.Models.Post>   ?? new();
+    var deletedMenus   = ViewBag.DeletedMenus   as List<NewsAggregator.Models.Menu>   ?? new();
+    var deletedSources = ViewBag.DeletedSources as List<NewsAggregator.Models.Source> ?? new();
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-0"><i class="bi bi-trash3-fill me-2 text-danger"></i>Thùng rác</h3>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        <li class="breadcrumb-item active">Thùng rác</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-content">
+        <div class="container-fluid">
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                Các mục bị xóa sẽ tự động <strong>xóa vĩnh viễn sau 30 ngày</strong> kể từ ngày xóa.
+            </div>
+
+            @* TABS *@
+            <ul class="nav nav-tabs mb-3" id="trashTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-posts">
+                        <i class="bi bi-file-text me-1"></i>Bài viết
+                        <span class="badge bg-danger ms-1">@deletedPosts.Count</span>
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-menus">
+                        <i class="bi bi-menu-button-wide me-1"></i>Danh mục
+                        <span class="badge bg-danger ms-1">@deletedMenus.Count</span>
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-sources">
+                        <i class="bi bi-rss me-1"></i>Nguồn báo
+                        <span class="badge bg-danger ms-1">@deletedSources.Count</span>
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+
+                @* ===== BÀI VIẾT ===== *@
+                <div class="tab-pane fade show active" id="tab-posts">
+                    <div class="card">
+                        <div class="card-body table-responsive p-0">
+                            @if (!deletedPosts.Any())
+                            {
+                                <p class="text-center text-muted py-4">Không có bài viết nào trong thùng rác.</p>
+                            }
+                            else
+                            {
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Tiêu đề</th>
+                                            <th>Danh mục</th>
+                                            <th>Nguồn báo</th>
+                                            <th>Ngày xóa</th>
+                                            <th>Tự xóa sau</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var post in deletedPosts)
+                                        {
+                                            var daysLeft = post.DeletedAt.HasValue
+                                                ? 30 - (int)(DateTime.Now - post.DeletedAt.Value).TotalDays
+                                                : 0;
+                                            <tr>
+                                                <td style="max-width:300px" class="text-truncate">@post.Title</td>
+                                                <td><span class="badge bg-secondary">@post.Menu?.MenuName</span></td>
+                                                <td>@post.Source?.SourceName</td>
+                                                <td>@post.DeletedAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                                                <td>
+                                                    <span class="badge @(daysLeft <= 3 ? "bg-danger" : "bg-warning text-dark")">
+                                                        @(daysLeft > 0 ? $"{daysLeft} ngày" : "Sắp xóa")
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex gap-1">
+                                                        <form asp-area="Admin" asp-controller="Trash"
+                                                              asp-action="RestorePost" asp-route-id="@post.PostID"
+                                                              method="post" class="d-inline">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="btn btn-success btn-sm" title="Khôi phục">
+                                                                <i class="bi bi-arrow-counterclockwise"></i> Khôi phục
+                                                            </button>
+                                                        </form>
+                                                        <form asp-area="Admin" asp-controller="Trash"
+                                                              asp-action="PermanentDeletePost" asp-route-id="@post.PostID"
+                                                              method="post" class="d-inline"
+                                                              onsubmit="return confirm('Xóa vĩnh viễn bài viết này? Không thể hoàn tác!')">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="btn btn-danger btn-sm" title="Xóa vĩnh viễn">
+                                                                <i class="bi bi-x-lg"></i> Xóa vĩnh viễn
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @* ===== DANH MỤC ===== *@
+                <div class="tab-pane fade" id="tab-menus">
+                    <div class="card">
+                        <div class="card-body table-responsive p-0">
+                            @if (!deletedMenus.Any())
+                            {
+                                <p class="text-center text-muted py-4">Không có danh mục nào trong thùng rác.</p>
+                            }
+                            else
+                            {
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Tên danh mục</th>
+                                            <th>Link</th>
+                                            <th>Ngày xóa</th>
+                                            <th>Tự xóa sau</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var menu in deletedMenus)
+                                        {
+                                            var daysLeft = menu.DeletedAt.HasValue
+                                                ? 30 - (int)(DateTime.Now - menu.DeletedAt.Value).TotalDays
+                                                : 0;
+                                            <tr>
+                                                <td><strong>@menu.MenuName</strong></td>
+                                                <td>@menu.Link</td>
+                                                <td>@menu.DeletedAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                                                <td>
+                                                    <span class="badge @(daysLeft <= 3 ? "bg-danger" : "bg-warning text-dark")">
+                                                        @(daysLeft > 0 ? $"{daysLeft} ngày" : "Sắp xóa")
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex gap-1">
+                                                        <form asp-area="Admin" asp-controller="Trash"
+                                                              asp-action="RestoreMenu" asp-route-id="@menu.MenuID"
+                                                              method="post" class="d-inline">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="btn btn-success btn-sm">
+                                                                <i class="bi bi-arrow-counterclockwise"></i> Khôi phục
+                                                            </button>
+                                                        </form>
+                                                        <form asp-area="Admin" asp-controller="Trash"
+                                                              asp-action="PermanentDeleteMenu" asp-route-id="@menu.MenuID"
+                                                              method="post" class="d-inline"
+                                                              onsubmit="return confirm('Xóa vĩnh viễn danh mục này? Không thể hoàn tác!')">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                                <i class="bi bi-x-lg"></i> Xóa vĩnh viễn
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @* ===== NGUỒN BÁO ===== *@
+                <div class="tab-pane fade" id="tab-sources">
+                    <div class="card">
+                        <div class="card-body table-responsive p-0">
+                            @if (!deletedSources.Any())
+                            {
+                                <p class="text-center text-muted py-4">Không có nguồn báo nào trong thùng rác.</p>
+                            }
+                            else
+                            {
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Tên nguồn báo</th>
+                                            <th>Website</th>
+                                            <th>Ngày xóa</th>
+                                            <th>Tự xóa sau</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var source in deletedSources)
+                                        {
+                                            var daysLeft = source.DeletedAt.HasValue
+                                                ? 30 - (int)(DateTime.Now - source.DeletedAt.Value).TotalDays
+                                                : 0;
+                                            <tr>
+                                                <td>
+                                                    <strong>@source.SourceName</strong>
+                                                    @if (!string.IsNullOrEmpty(source.LogoUrl))
+                                                    {
+                                                        <img src="@source.LogoUrl" alt="@source.SourceName"
+                                                             class="ms-2" style="height:18px">
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <a href="@source.WebsiteUrl" target="_blank">@source.WebsiteUrl</a>
+                                                </td>
+                                                <td>@source.DeletedAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                                                <td>
+                                                    <span class="badge @(daysLeft <= 3 ? "bg-danger" : "bg-warning text-dark")">
+                                                        @(daysLeft > 0 ? $"{daysLeft} ngày" : "Sắp xóa")
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex gap-1">
+                                                        <form asp-area="Admin" asp-controller="Trash"
+                                                              asp-action="RestoreSource" asp-route-id="@source.SourceID"
+                                                              method="post" class="d-inline">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="btn btn-success btn-sm">
+                                                                <i class="bi bi-arrow-counterclockwise"></i> Khôi phục
+                                                            </button>
+                                                        </form>
+                                                        <form asp-area="Admin" asp-controller="Trash"
+                                                              asp-action="PermanentDeleteSource" asp-route-id="@source.SourceID"
+                                                              method="post" class="d-inline"
+                                                              onsubmit="return confirm('Xóa vĩnh viễn nguồn báo này? Không thể hoàn tác!')">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                                <i class="bi bi-x-lg"></i> Xóa vĩnh viễn
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</main>

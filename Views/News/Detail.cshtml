@@ -1,0 +1,823 @@
+@model NewsAggregator.Models.Post
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = Model.Title;
+    var relatedPosts = ViewBag.RelatedPosts as List<NewsAggregator.Models.Post>
+                       ?? new List<NewsAggregator.Models.Post>();
+    bool isSaved = ViewBag.IsSaved == true;
+}
+
+<section class="single-block-wrapper section-padding">
+    <div class="container">
+        <div class="row">
+
+            @* ===== CỘT CHÍNH — NỘI DUNG BÀI VIẾT ===== *@
+            <div class="col-lg-8 col-md-12 col-sm-12 col-xs-12">
+
+                @* PHẦN HEADER BÀI VIẾT *@
+                <div class="single-post">
+                    <div class="post-header mb-5">
+
+                        @* Danh mục bài viết *@
+                        <a class="post-category"
+                           asp-controller="News"
+                           asp-action="Category"
+                           asp-route-id="@Model.MenuID">
+                            @Model.Menu?.MenuName
+                        </a>
+
+                        @* Tiêu đề + logo nguồn báo *@
+                        <h2 class="post-title">@Model.Title</h2>
+                        @if (Model.Source != null && !string.IsNullOrEmpty(Model.Source.LogoUrl))
+                        {
+                            <div class="source-logo mb-2">
+                                <a href="@Model.Source.WebsiteUrl" target="_blank" rel="noopener"
+                                   title="@Model.Source.SourceName">
+                                    <img src="@Model.Source.LogoUrl"
+                                         alt="@Model.Source.SourceName"
+                                         style="max-height:28px; max-width:120px; object-fit:contain; vertical-align:middle;" />
+                                </a>
+                            </div>
+                        }
+
+                        @* Thông tin meta *@
+                        <div class="post-meta mb-3">
+                            @* Nút lưu bài viết *@
+                            <div class="mb-2">
+                                @if (User.Identity?.IsAuthenticated == true)
+                                {
+                                    <button id="btn-save-post"
+                                            class="btn btn-sm @(isSaved ? "btn-warning" : "btn-outline-warning")"
+                                            onclick="toggleSave(@Model.PostID)">
+                                        <i class="fa @(isSaved ? "fa-bookmark" : "fa-bookmark-o") mr-1"></i>
+                                        @(isSaved ? "Đã lưu" : "Lưu bài viết")
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-warning" onclick="showLoginModal()">
+                                        <i class="fa fa-bookmark-o mr-1"></i> Lưu bài viết
+                                    </button>
+                                }
+                                <span id="save-msg" class="ml-2 text-muted small"></span>
+                            </div>
+
+                            @* Nút TTS *@
+                            <div class="tts-controls mt-3 mb-3">
+                                <button id="btn-play" onclick="startReading()" class="btn btn-primary btn-sm">
+                                    <i class="fa fa-volume-up mr-1"></i> Đọc bài viết
+                                </button>
+                                <button id="btn-pause" onclick="pauseReading()"
+                                        class="btn btn-warning btn-sm" style="display:none">
+                                    <i class="fa fa-pause mr-1"></i> Tạm dừng
+                                </button>
+                                <button id="btn-stop" onclick="stopReading()"
+                                        class="btn btn-secondary btn-sm" style="display:none">
+                                    <i class="fa fa-stop mr-1"></i> Dừng
+                                </button>
+                                <span id="tts-status" class="text-muted ml-2" style="font-size:13px"></span>
+                            </div>
+
+                            <span class="posted-time">
+                                <i class="fa fa-clock-o mr-2"></i>
+                                @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                            </span>
+                            <span class="post-author ml-3">
+                                by <strong>@Model.Author</strong>
+                            </span>
+                            <span class="ml-3">
+                                <i class="fa fa-eye mr-1"></i>
+                                @Model.ViewCount lượt xem
+                            </span>
+                            @if (Model.Source != null)
+                            {
+                                <span class="ml-3">
+                                    <i class="fa fa-newspaper-o mr-1"></i>
+                                    Nguồn:
+                                    <a href="@Model.Source.WebsiteUrl"
+                                       target="_blank">
+                                        @Model.Source.SourceName
+                                    </a>
+                                </span>
+                            }
+                        </div>
+
+                        @* Tóm tắt bài viết *@
+                        <p>@Model.Abstract</p>
+                    </div>
+
+                    @* PHẦN THÂN BÀI VIẾT *@
+                    <div class="post-body">
+
+                        @* Nội dung bài viết *@
+                        <div class="entry-content article-content">
+                            @if (!string.IsNullOrEmpty(Model.Contents))
+                            {
+                                @Html.Raw(Model.Contents)
+                            }
+                            else
+                            {
+                                @* Bài chỉ có RSS summary: hiện thumbnail + tóm tắt + link gốc *@
+                                @if (!string.IsNullOrEmpty(Model.Images))
+                                {
+                                    <figure>
+                                        <img src="@Model.Images" alt="@Model.Title" referrerpolicy="no-referrer" />
+                                    </figure>
+                                }
+                                <p>@Model.Abstract</p>
+                                <p>
+                                    <a href="@Model.Link" target="_blank" class="btn btn-primary">
+                                        Đọc bài đầy đủ tại @Model.Source?.SourceName
+                                        <i class="fa fa-external-link ml-2"></i>
+                                    </a>
+                                </p>
+                            }
+                        </div>
+
+                        @* SHARE + TAGS *@
+                        <div class="share-block d-flex justify-content-between
+                                    align-items-center border-top border-bottom mt-5">
+                            <div class="post-tags">
+                                <span>Danh mục: </span>
+                                <a asp-controller="News"
+                                   asp-action="Category"
+                                   asp-route-id="@Model.MenuID">
+                                    @Model.Menu?.MenuName
+                                </a>
+                            </div>
+                            <ul class="share-icons list-unstyled">
+                                <li class="facebook">
+                                    <a href="https://www.facebook.com/sharer/sharer.php?u=@Model.Link"
+                                       target="_blank">
+                                        <i class="fa fa-facebook"></i>
+                                    </a>
+                                </li>
+                                <li class="twitter">
+                                    <a href="https://twitter.com/intent/tweet?url=@Model.Link&text=@Model.Title"
+                                       target="_blank">
+                                        <i class="fa fa-twitter"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                @* ===== KHU VỰC BÌNH LUẬN ===== *@
+                @{
+                    var comments = ViewBag.Comments as List<NewsAggregator.Models.Comment>
+                                   ?? new List<NewsAggregator.Models.Comment>();
+                }
+                <div class="comment-section mt-5 mb-4">
+                    <h3 class="news-title"><span>Bình luận (@comments.Count)</span></h3>
+
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="comment-form-wrapper mb-4">
+                            <form id="comment-form">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="postId" value="@Model.PostID" />
+                                <div class="form-group">
+                                    <textarea id="comment-content" name="content" class="form-control"
+                                              rows="3" placeholder="Nhập bình luận của bạn..." maxlength="1000"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm mt-2">
+                                    <i class="fa fa-paper-plane mr-1"></i> Gửi bình luận
+                                </button>
+                                <span id="comment-msg" class="ml-2 text-muted small"></span>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="login-prompt-box p-3 mb-4 rounded border text-center" style="background:#f8f9fa;">
+                            <i class="fa fa-lock fa-2x text-muted mb-2 d-block"></i>
+                            <p class="mb-2 text-muted">Bạn cần đăng nhập để bình luận.</p>
+                            <a asp-controller="Account" asp-action="Login"
+                               asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)"
+                               class="btn btn-primary btn-sm">
+                                <i class="fa fa-sign-in mr-1"></i> Đăng nhập để bình luận
+                            </a>
+                        </div>
+                    }
+
+                    <div id="comments-list">
+                        @if (comments.Count == 0)
+                        {
+                            <p class="text-muted small" id="no-comments-msg">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+                        }
+                        @foreach (var c in comments)
+                        {
+                            <div class="comment-item py-3 border-bottom">
+                                <div class="d-flex align-items-start">
+                                    <div class="comment-avatar mr-3 pt-1">
+                                        <i class="fa fa-user-circle fa-2x text-secondary"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <strong class="text-dark">@(c.User?.FullName ?? "Người dùng")</strong>
+                                            <small class="text-muted">@c.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                        </div>
+                                        <p class="mb-0">@c.Content</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* ===== BÀI VIẾT LIÊN QUAN ===== *@
+                @if (relatedPosts.Any())
+                {
+                    <div class="related-posts-block mt-5">
+                        <h3 class="news-title">
+                            <span>Bài viết liên quan</span>
+                        </h3>
+                        <div class="news-style-two-slide">
+                            @foreach (var p in relatedPosts)
+                            {
+                                <div class="item">
+                                    <div class="post-block-wrapper clearfix">
+                                        <div class="post-thumbnail mb-0">
+                                            <a asp-controller="News"
+                                               asp-action="Detail"
+                                               asp-route-id="@p.PostID">
+                                                <img class="img-fluid"
+                                                     src="@(string.IsNullOrEmpty(p.Images)
+                                                        ? "/images/news/news-04.jpg"
+                                                        : p.Images)"
+                                                     alt="@p.Title" />
+                                            </a>
+                                        </div>
+                                        <a class="post-category"
+                                           asp-controller="News"
+                                           asp-action="Category"
+                                           asp-route-id="@p.MenuID">
+                                            @p.Menu?.MenuName
+                                        </a>
+                                        <div class="post-content">
+                                            <h2 class="post-title title-sm">
+                                                <a asp-controller="News"
+                                                   asp-action="Detail"
+                                                   asp-route-id="@p.PostID">
+                                                    @p.Title
+                                                </a>
+                                            </h2>
+                                            <div class="post-meta">
+                                                <span class="posted-time">
+                                                    <i class="fa fa-clock-o mr-1"></i>
+                                                    @p.CreatedDate.ToString("dd/MM/yyyy")
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+            </div>
+
+            @* ===== SIDEBAR PHẢI ===== *@
+            <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+                <div class="sidebar sidebar-right">
+
+                    @* Thông tin nguồn báo *@
+                    @if (Model.Source != null)
+                    {
+                        <div class="widget">
+                            <h3 class="news-title"><span>Nguồn báo</span></h3>
+                            <div class="text-center p-3">
+                                <p>
+                                    <i class="fa fa-newspaper-o mr-2"></i>
+                                    <strong>@Model.Source.SourceName</strong>
+                                </p>
+                                <a href="@Model.Link"
+                                   target="_blank"
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fa fa-external-link mr-1"></i>
+                                    Xem bài gốc
+                                </a>
+                            </div>
+                        </div>
+                    }
+
+                    @* Bài viết liên quan dạng list trong sidebar *@
+                    @if (relatedPosts.Any())
+                    {
+                        <div class="widget">
+                            <h3 class="news-title"><span>Có thể bạn thích</span></h3>
+                            <div class="post-list-block">
+                                @foreach (var p in relatedPosts)
+                                {
+                                    <div class="post-block-wrapper post-float clearfix">
+                                        <div class="post-thumbnail">
+                                            <a asp-controller="News"
+                                               asp-action="Detail"
+                                               asp-route-id="@p.PostID">
+                                                <img class="img-fluid"
+                                                     src="@(string.IsNullOrEmpty(p.Images)
+                                                        ? "/images/news/news-03.jpg"
+                                                        : p.Images)"
+                                                     alt="@p.Title" />
+                                            </a>
+                                        </div>
+                                        <div class="post-content">
+                                            <h2 class="post-title title-sm">
+                                                <a asp-controller="News"
+                                                   asp-action="Detail"
+                                                   asp-route-id="@p.PostID">
+                                                    @p.Title
+                                                </a>
+                                            </h2>
+                                            <div class="post-meta">
+                                                <span class="posted-time">
+                                                    <i class="fa fa-clock-o mr-1"></i>
+                                                    @p.CreatedDate.ToString("dd/MM/yyyy")
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+@section Styles {
+<style>
+    /* ===== Article content layout ===== */
+    .article-content {
+        max-width: 760px;
+        margin: 0 auto;
+        line-height: 1.8;
+        font-size: 17px;
+    }
+
+    /* Every element respects container width */
+    .article-content * {
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    /* Images: always full-width, auto height */
+    .article-content img {
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
+        margin: 20px auto !important;
+        border-radius: 6px;
+        object-fit: contain;
+    }
+
+    /* Broken image → hide completely */
+    .article-content img.img-broken,
+    .entry-content img.img-broken { display: none !important; }
+
+    /* Figure: full width, no fixed height */
+    .article-content figure,
+    .article-content picture,
+    .entry-content figure,
+    .entry-content picture {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding-top: 0 !important;
+        margin: 20px 0 !important;
+        display: block !important;
+    }
+
+    /* Kill every height-related inline style on figure descendants */
+    .article-content figure *,
+    .article-content picture *,
+    .entry-content figure *,
+    .entry-content picture * {
+        height: auto !important;
+        min-height: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    /* Caption */
+    .article-content figcaption,
+    .entry-content figcaption {
+        font-size: 14px;
+        color: #777;
+        font-style: italic;
+        text-align: center;
+        margin-top: 8px;
+        padding: 0 8px;
+    }
+
+    /* VnExpress / TuoiTre / DanTri image wrapper classes */
+    .entry-content .VCSortableInPreviewMode,
+    .entry-content .box_content_detail,
+    .entry-content .fig-picture,
+    .entry-content [data-type="Photo"],
+    .entry-content .article-body-image-wrapper,
+    .entry-content .item_slide_show,
+    .entry-content .imagefull,
+    .entry-content .image_article,
+    .entry-content .clearfix { /* TuoiTre */
+        height: auto !important;
+        min-height: 0 !important;
+        padding-top: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Reasonable paragraph spacing */
+    .article-content p { margin-bottom: 1rem; }
+
+    .source-logo img { opacity: 0.85; }
+    .source-logo img:hover { opacity: 1; }
+
+    /* ===== Comment section ===== */
+    .comment-section .news-title { margin-bottom: 1rem; }
+    .comment-item:last-child { border-bottom: none !important; }
+    .comment-avatar { flex-shrink: 0; }
+    .login-prompt-box { border-color: #dee2e6 !important; }
+</style>
+}
+@* Modal yêu cầu đăng nhập *@
+<div class="modal fade" id="loginRequiredModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4 px-3">
+                <i class="fa fa-lock fa-3x text-muted mb-3 d-block"></i>
+                <h5 class="mb-2">Yêu cầu đăng nhập</h5>
+                <p class="text-muted mb-3 small">Bạn cần đăng nhập để sử dụng tính năng này.</p>
+                <a id="modal-login-btn" href="#" class="btn btn-primary btn-sm mr-2">
+                    <i class="fa fa-sign-in mr-1"></i> Đăng nhập
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // --- State ---
+    let audioQueue   = [];   // danh sách URL audio đã tạo
+    let currentAudio = null; // Audio object đang phát (để pause/stop thực sự)
+    let isPaused     = false;
+    let isStopped    = false;
+    let currentIndex = 0;
+
+    // --- Lấy nội dung bài viết dưới dạng plain-text gửi lên server làm sạch ---
+    function getRawContent() {
+        const title    = document.querySelector('.post-title')?.innerText ?? '';
+        const abstract = document.querySelector('.post-header > p')?.innerText ?? '';
+        const body     = document.querySelector('.entry-content')?.innerHTML ?? '';
+        return `${title}. ${abstract}. ${body}`;
+    }
+
+    // --- Nút Đọc bài viết ---
+    async function startReading() {
+        if (isPaused) { resumeReading(); return; }
+
+        isStopped    = false;
+        isPaused     = false;
+        currentIndex = 0;
+        audioQueue   = [];
+
+        const rawContent = getRawContent();
+        if (!rawContent.trim()) { setStatus('Không có nội dung!'); return; }
+
+        // Chia thành các đoạn 300 ký tự
+        const chunks = splitText(rawContent, 300);
+        updateButtons('loading');
+        setStatus(`Đang tạo audio (0/${chunks.length} đoạn)...`);
+
+        for (let i = 0; i < chunks.length; i++) {
+            if (isStopped) break;
+            setStatus(`Đang tạo audio (${i + 1}/${chunks.length} đoạn)...`);
+            try {
+                const res  = await fetch('/Tts/Speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: chunks[i], voice: 'banmai' })
+                });
+                const data = await res.json();
+                if (data.audioUrl) audioQueue.push(data.audioUrl);
+            } catch (e) {
+                console.warn(`[TTS] Lỗi đoạn ${i + 1}:`, e);
+            }
+        }
+
+        if (audioQueue.length === 0) {
+            setStatus('Lỗi tạo audio!'); updateButtons('stopped'); return;
+        }
+
+        setStatus('Đang tải audio...');
+        await delay(3000);
+
+        updateButtons('playing');
+        await playFrom(0);
+    }
+
+    // --- Phát từ index ---
+    async function playFrom(index) {
+        if (isStopped || index >= audioQueue.length) {
+            if (!isStopped) { updateButtons('stopped'); setStatus('Đã đọc xong!'); }
+            return;
+        }
+
+        currentIndex = index;
+        setStatus(`Đang đọc... (${index + 1}/${audioQueue.length})`);
+
+        await new Promise((resolve) => {
+            const audio  = new Audio(audioQueue[index]);
+            currentAudio = audio;
+
+            audio.onended = async () => {
+                currentAudio = null;
+                if (!isStopped && !isPaused) {
+                    await delay(300);
+                    await playFrom(index + 1);
+                }
+                resolve();
+            };
+
+            audio.onerror = async () => {
+                currentAudio = null;
+                await delay(1500);
+                if (!isStopped && !isPaused) await playFrom(index + 1);
+                resolve();
+            };
+
+            audio.play().catch(async () => {
+                currentAudio = null;
+                await delay(1500);
+                if (!isStopped && !isPaused) await playFrom(index + 1);
+                resolve();
+            });
+        });
+    }
+
+    // --- Tạm dừng: dừng audio đang phát, giữ vị trí ---
+    function pauseReading() {
+        isPaused = true;
+        if (currentAudio) {
+            currentAudio.pause();
+        }
+        updateButtons('paused');
+        setStatus('Đã tạm dừng — nhấn Tiếp tục để nghe tiếp');
+    }
+
+    // --- Tiếp tục từ đoạn đang dừng ---
+    async function resumeReading() {
+        isPaused = false;
+        updateButtons('playing');
+        if (currentAudio) {
+            // Tiếp tục audio đang pause (nếu còn)
+            currentAudio.play().catch(() => {});
+        } else {
+            // Phát lại từ đoạn hiện tại
+            await playFrom(currentIndex);
+        }
+    }
+
+    // --- Dừng hẳn ---
+    function stopReading() {
+        isStopped    = true;
+        isPaused     = false;
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.src = '';
+            currentAudio = null;
+        }
+        audioQueue   = [];
+        currentIndex = 0;
+        updateButtons('stopped');
+        setStatus('');
+    }
+
+    function splitText(text, maxLen) {
+        const chunks    = [];
+        let remaining   = text.trim();
+        while (remaining.length > 0) {
+            if (remaining.length <= maxLen) { chunks.push(remaining); break; }
+            let cutAt = maxLen;
+            for (const p of ['. ', '! ', '? ', ', ', '; ']) {
+                const idx = remaining.lastIndexOf(p, maxLen);
+                if (idx > maxLen * 0.5) { cutAt = idx + p.length; break; }
+            }
+            chunks.push(remaining.substring(0, cutAt).trim());
+            remaining = remaining.substring(cutAt).trim();
+        }
+        return chunks.filter(c => c.length > 0);
+    }
+
+    function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function setStatus(msg) { document.getElementById('tts-status').innerText = msg; }
+
+    function updateButtons(state) {
+        const btnPlay  = document.getElementById('btn-play');
+        const btnPause = document.getElementById('btn-pause');
+        const btnStop  = document.getElementById('btn-stop');
+
+        btnPlay.style.display  = 'none';
+        btnPause.style.display = 'none';
+        btnStop.style.display  = 'none';
+        btnPlay.disabled = false;
+
+        if (state === 'loading') {
+            btnPlay.style.display = 'inline-block';
+            btnPlay.disabled      = true;
+            btnPlay.innerHTML     = '<i class="fa fa-spinner fa-spin mr-1"></i> Đang tải...';
+            btnStop.style.display = 'inline-block';
+        } else if (state === 'playing') {
+            btnPause.style.display = 'inline-block';
+            btnStop.style.display  = 'inline-block';
+        } else if (state === 'paused') {
+            btnPlay.style.display  = 'inline-block';
+            btnPlay.innerHTML      = '<i class="fa fa-play mr-1"></i> Tiếp tục';
+            btnStop.style.display  = 'inline-block';
+        } else {
+            btnPlay.style.display = 'inline-block';
+            btnPlay.innerHTML     = '<i class="fa fa-volume-up mr-1"></i> Đọc bài viết';
+        }
+    }
+
+    // Sửa lại onclick của nút Play để xử lý cả resume
+    document.getElementById('btn-play').onclick = startReading;
+
+    // ===== Fix lazy-loaded images + blank spaces trong nội dung bài viết =====
+    (function fixLazyImages() {
+        const entryContent = document.querySelector('.entry-content');
+        if (!entryContent) return;
+
+        // Xóa height inline trên TẤT CẢ wrapper ảnh phổ biến (VnExpress, TuoiTre, DanTri...)
+        const wrapperSel = 'figure, picture, .VCSortableInPreviewMode, .box_content_detail, ' +
+                           '.fig-picture, [data-type="Photo"], .article-body-image-wrapper, ' +
+                           '.item_slide_show, .imagefull, .image_article';
+        entryContent.querySelectorAll(wrapperSel).forEach(el => {
+            el.style.height    = '';
+            el.style.minHeight = '';
+            el.style.paddingTop = '';
+            el.removeAttribute('height');
+        });
+
+        // Khi ảnh lỗi: ẩn ảnh + collapse wrapper để không còn khoảng trắng
+        function collapseWrapper(img) {
+            let el = img.parentElement;
+            while (el && el !== entryContent) {
+                el.style.height    = '';
+                el.style.minHeight = '';
+                el.style.paddingTop = '';
+                el.removeAttribute('height');
+                if (el.tagName === 'FIGURE' || el.tagName === 'PICTURE') {
+                    el.style.display = 'none';
+                    return;
+                }
+                el = el.parentElement;
+            }
+        }
+
+        entryContent.querySelectorAll('img').forEach(img => {
+            const src     = (img.getAttribute('src') || '').trim();
+            const isEmpty = !src || src === 'about:blank'
+                         || src === window.location.href
+                         || src.startsWith('data:image/gif');
+
+            if (isEmpty) {
+                const real = img.dataset.src
+                          || img.dataset.original
+                          || img.dataset.lazySrc
+                          || img.dataset.lazy
+                          || img.getAttribute('data-src')
+                          || img.getAttribute('data-original');
+                if (real) {
+                    img.setAttribute('referrerpolicy', 'no-referrer');
+                    img.src = real;
+                } else {
+                    img.classList.add('img-broken');
+                    collapseWrapper(img);
+                }
+            }
+
+            // Ảnh lỗi load (404, hotlink blocked...) → ẩn + collapse wrapper
+            img.addEventListener('error', function () {
+                this.classList.add('img-broken');
+                collapseWrapper(this);
+            });
+
+            img.removeAttribute('width');
+            img.removeAttribute('height');
+        });
+    })();
+
+    window.addEventListener('beforeunload', stopReading);
+
+    // --- Lưu / bỏ lưu bài viết ---
+    let _isSaved = @(isSaved ? "true" : "false");
+
+    async function toggleSave(postId) {
+        const btn     = document.getElementById('btn-save-post');
+        const msg     = document.getElementById('save-msg');
+        const action  = _isSaved ? '/SavedPosts/Remove' : '/SavedPosts/Save';
+        const token   = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+        btn.disabled = true;
+        try {
+            const res  = await fetch(action, {
+                method : 'POST',
+                headers: {
+                    'Content-Type'           : 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `postId=${postId}&__RequestVerificationToken=${encodeURIComponent(token)}`
+            });
+            const data = await res.json();
+            msg.textContent = data.message;
+
+            if (data.success) {
+                _isSaved = !_isSaved;
+                btn.className = _isSaved ? 'btn btn-sm btn-warning' : 'btn btn-sm btn-outline-warning';
+                btn.innerHTML = `<i class="fa ${_isSaved ? 'fa-bookmark' : 'fa-bookmark-o'} mr-1"></i>${_isSaved ? 'Đã lưu' : 'Lưu bài viết'}`;
+            }
+        } catch (e) {
+            msg.textContent = 'Lỗi kết nối!';
+        }
+        btn.disabled = false;
+        setTimeout(() => msg.textContent = '', 3000);
+    }
+
+    // --- Login modal ---
+    function showLoginModal() {
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        document.getElementById('modal-login-btn').href = '/Account/Login?returnUrl=' + returnUrl;
+        $('#loginRequiredModal').modal('show');
+    }
+
+    // --- Comment form ---
+    function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    const commentForm = document.getElementById('comment-form');
+    if (commentForm) {
+        commentForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const content = document.getElementById('comment-content').value.trim();
+            const msg     = document.getElementById('comment-msg');
+            const btn     = commentForm.querySelector('button[type="submit"]');
+            const token   = commentForm.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+            const postId  = commentForm.querySelector('input[name="postId"]')?.value;
+
+            if (!content) { msg.textContent = 'Vui lòng nhập bình luận!'; return; }
+
+            btn.disabled = true;
+            msg.textContent = 'Đang gửi...';
+
+            try {
+                const res  = await fetch('/Comment/Submit', {
+                    method : 'POST',
+                    headers: {
+                        'Content-Type'            : 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `postId=${postId}&content=${encodeURIComponent(content)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+                });
+                const data = await res.json();
+                msg.textContent = data.message;
+
+                if (data.success) {
+                    document.getElementById('comment-content').value = '';
+                    const noMsg = document.getElementById('no-comments-msg');
+                    if (noMsg) noMsg.remove();
+
+                    const list       = document.getElementById('comments-list');
+                    const newComment = document.createElement('div');
+                    newComment.className = 'comment-item py-3 border-bottom';
+                    newComment.innerHTML = `
+                        <div class="d-flex align-items-start">
+                            <div class="comment-avatar mr-3 pt-1">
+                                <i class="fa fa-user-circle fa-2x text-secondary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">${escapeHtml(data.comment.authorName)}</strong>
+                                    <small class="text-muted">${escapeHtml(data.comment.createdAt)}</small>
+                                </div>
+                                <p class="mb-0">${escapeHtml(data.comment.content)}</p>
+                            </div>
+                        </div>`;
+                    list.insertBefore(newComment, list.firstChild);
+                    setTimeout(() => msg.textContent = '', 3000);
+                }
+            } catch (ex) {
+                msg.textContent = 'Lỗi kết nối!';
+            }
+            btn.disabled = false;
+        });
+    }
+</script>
+}

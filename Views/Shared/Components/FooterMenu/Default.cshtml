@@ -1,0 +1,17 @@
+@model IReadOnlyCollection<NewsAggregator.Models.ViewModels.MenuNodeViewModel>
+
+@if (Model.Any())
+{
+    <div class="mb-4">
+        @foreach (var menu in Model)
+        {
+            <div class="mb-2">
+                <a href="@menu.Url" class="text-white mr-3">@menu.MenuName</a>
+                @foreach (var child in menu.Children)
+                {
+                    <a href="@child.Url" class="text-white-50 mr-3">@child.MenuName</a>
+                }
+            </div>
+        }
+    </div>
+}

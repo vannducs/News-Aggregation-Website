@@ -1,0 +1,290 @@
+@model AdminUserIndexViewModel
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-0">Quản lý người dùng</h3>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Người dùng</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-content">
+        <div class="container-fluid">
+            @if (TempData["SuccessMessage"] is string message)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @message
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="row mb-4">
+                <div class="col-lg-4 col-12">
+                    <div class="small-box text-bg-primary">
+                        <div class="inner">
+                            <h3>@Model.TotalUsers</h3>
+                            <p>Tổng tài khoản</p>
+                        </div>
+                        <i class="small-box-icon bi bi-people-fill"></i>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-12">
+                    <div class="small-box text-bg-success">
+                        <div class="inner">
+                            <h3>@Model.ActiveUsers</h3>
+                            <p>Đang hoạt động</p>
+                        </div>
+                        <i class="small-box-icon bi bi-person-check-fill"></i>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-12">
+                    <div class="small-box text-bg-secondary">
+                        <div class="inner">
+                            <h3>@Model.InactiveUsers</h3>
+                            <p>Đã khóa</p>
+                        </div>
+                        <i class="small-box-icon bi bi-person-lock"></i>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-12">
+                    <div class="small-box text-bg-dark">
+                        <div class="inner">
+                            <h3>@Model.DeletedUsers</h3>
+                            <p>Đã ẩn</p>
+                        </div>
+                        <i class="small-box-icon bi bi-trash3-fill"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-primary card-outline mb-4">
+                <div class="card-header">
+                    <h3 class="card-title">Bộ lọc</h3>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label">Tìm kiếm</label>
+                            <input type="text" name="keyword" value="@Model.Keyword" class="form-control"
+                                   placeholder="Họ tên, email, tên đăng nhập" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Vai trò</label>
+                            <select name="role" class="form-select">
+                                <option value="">Tất cả</option>
+                                @foreach (var role in AdminUserFormViewModel.AvailableRoles)
+                                {
+                                    if (Model.Role == role)
+                                    {
+                                        <option value="@role" selected>@role</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@role">@role</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Trạng thái</label>
+                            <select name="isActive" class="form-select">
+                                <option value="">Tất cả</option>
+                                @if (Model.IsActive == true)
+                                {
+                                    <option value="true" selected>Đang hoạt động</option>
+                                    <option value="false">Đã khóa</option>
+                                }
+                                else if (Model.IsActive == false)
+                                {
+                                    <option value="true">Đang hoạt động</option>
+                                    <option value="false" selected>Đã khóa</option>
+                                }
+                                else
+                                {
+                                    <option value="true">Đang hoạt động</option>
+                                    <option value="false">Đã khóa</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Số dòng/trang</label>
+                            <select name="pageSize" class="form-select">
+                                @foreach (var size in new[] { 10, 20, 50 })
+                                {
+                                    if (Model.PageSize == size)
+                                    {
+                                        <option value="@size" selected>@size</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@size">@size</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input type="checkbox" name="includeDeleted" value="true"
+                                       class="form-check-input" id="includeDeleted"
+                                       @(Model.IncludeDeleted ? "checked" : null) />
+                                <label class="form-check-label" for="includeDeleted">
+                                    Hiển thị cả tài khoản đã ẩn
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Lọc</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Xóa bộ lọc</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Danh sách người dùng</h3>
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Thêm người dùng
+                    </a>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Họ tên</th>
+                                <th>Tên đăng nhập</th>
+                                <th>Email</th>
+                                <th>Vai trò</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày tạo</th>
+                                <th class="text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Users.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">Không có người dùng phù hợp.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var user in Model.Users)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@user.FullName</div>
+                                            @if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
+                                            {
+                                                <div class="small text-muted">@user.PhoneNumber</div>
+                                            }
+                                        </td>
+                                        <td>@user.UserName</td>
+                                        <td>@user.Email</td>
+                                        <td>
+                                            <span class="badge text-bg-info">@user.Role</span>
+                                        </td>
+                                        <td>
+                                            @if (user.IsDeleted)
+                                            {
+                                                <span class="badge text-bg-dark">Đã ẩn</span>
+                                            }
+                                            else if (user.IsActive)
+                                            {
+                                                <span class="badge text-bg-success">Hoạt động</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge text-bg-secondary">Đã khóa</span>
+                                            }
+                                        </td>
+                                        <td>@user.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td class="text-end">
+                                            <div class="btn-group">
+                                                @if (!user.IsDeleted)
+                                                {
+                                                    <a asp-action="Edit" asp-route-id="@user.AppUserID"
+                                                       class="btn btn-sm btn-outline-primary">Sửa</a>
+                                                    <form asp-action="ToggleStatus" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@user.AppUserID" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                            @(user.IsActive ? "Khóa" : "Mở khóa")
+                                                        </button>
+                                                    </form>
+                                                    <form asp-action="ResetPassword" method="post"
+                                                          onsubmit="return confirm('Đặt lại mật khẩu về 123456?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@user.AppUserID" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                            Đặt lại MK
+                                                        </button>
+                                                    </form>
+                                                    <form asp-action="Delete" method="post"
+                                                          onsubmit="return confirm('Ẩn người dùng này khỏi hệ thống?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@user.AppUserID" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Ẩn</button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <form asp-action="Restore" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@user.AppUserID" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                                            Khôi phục
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <span class="text-muted">
+                        Trang @Model.CurrentPage / @Model.TotalPages &mdash; Tổng @Model.TotalRecords bản ghi
+                    </span>
+                    <div class="btn-group">
+                        <a asp-action="Index"
+                           asp-route-keyword="@Model.Keyword"
+                           asp-route-role="@Model.Role"
+                           asp-route-isActive="@Model.IsActive"
+                           asp-route-includeDeleted="@Model.IncludeDeleted"
+                           asp-route-pageSize="@Model.PageSize"
+                           asp-route-page="@(Model.CurrentPage - 1)"
+                           class="btn btn-outline-secondary @(Model.CurrentPage <= 1 ? "disabled" : "")">
+                            &laquo; Trước
+                        </a>
+                        <a asp-action="Index"
+                           asp-route-keyword="@Model.Keyword"
+                           asp-route-role="@Model.Role"
+                           asp-route-isActive="@Model.IsActive"
+                           asp-route-includeDeleted="@Model.IncludeDeleted"
+                           asp-route-pageSize="@Model.PageSize"
+                           asp-route-page="@(Model.CurrentPage + 1)"
+                           class="btn btn-outline-secondary @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                            Sau &raquo;
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>

@@ -1,0 +1,141 @@
+@model NewsAggregator.Models.Source
+@{
+    ViewData["Title"] = "Thêm nguồn báo";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-0">Thêm nguồn báo</h3>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item">
+                            <a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a asp-area="Admin" asp-controller="Source" asp-action="Index">
+                                Nguồn báo
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active">Thêm mới</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Thông tin nguồn báo</h3>
+                        </div>
+                        <div class="card-body">
+                            <form asp-area="Admin" asp-controller="Source"
+                                  asp-action="Create" method="post">
+                                @Html.AntiForgeryToken()
+
+                                <div class="mb-3">
+                                    <label asp-for="SourceName" class="form-label fw-semibold">
+                                        Tên nguồn báo <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="SourceName" class="form-control"
+                                           placeholder="VD: VnExpress, Tuổi Trẻ...">
+                                    <span asp-validation-for="SourceName" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="RssUrl" class="form-label fw-semibold">
+                                        RSS Feed URL <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="RssUrl" class="form-control"
+                                           placeholder="VD: https://vnexpress.net/rss/tin-moi-nhat.rss">
+                                    <span asp-validation-for="RssUrl" class="text-danger"></span>
+                                    <div class="form-text">
+                                        Đường dẫn RSS Feed để crawl bài viết tự động.
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="WebsiteUrl" class="form-label fw-semibold">
+                                        Website URL
+                                    </label>
+                                    <input asp-for="WebsiteUrl" class="form-control"
+                                           placeholder="VD: https://vnexpress.net">
+                                    <span asp-validation-for="WebsiteUrl" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="LogoUrl" class="form-label fw-semibold">
+                                        Logo URL
+                                    </label>
+                                    <input asp-for="LogoUrl" class="form-control"
+                                           placeholder="VD: https://vnexpress.net/logo.png">
+                                    <span asp-validation-for="LogoUrl" class="text-danger"></span>
+                                    <div class="form-text">
+                                        Đường dẫn ảnh logo của báo (không bắt buộc).
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-plus-lg me-1"></i>Thêm nguồn báo
+                                    </button>
+                                    <a asp-area="Admin" asp-controller="Source"
+                                       asp-action="Index" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left me-1"></i>Quay lại
+                                    </a>
+                                </div>
+
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                @* Hướng dẫn RSS *@
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">RSS Feed phổ biến</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <strong>VnExpress</strong>
+                                    <div class="small text-muted">
+                                        vnexpress.net/rss/tin-moi-nhat.rss
+                                    </div>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Tuổi Trẻ</strong>
+                                    <div class="small text-muted">
+                                        tuoitre.vn/rss/tin-moi-nhat.rss
+                                    </div>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Dân Trí</strong>
+                                    <div class="small text-muted">
+                                        dantri.com.vn/rss/home.rss
+                                    </div>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Thanh Niên</strong>
+                                    <div class="small text-muted">
+                                        thanhnien.vn/rss/home.rss
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</main>

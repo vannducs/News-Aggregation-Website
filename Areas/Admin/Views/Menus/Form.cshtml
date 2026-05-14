@@ -1,0 +1,93 @@
+@model AdminMenuFormViewModel
+@{
+    var isEdit = Model.MenuID > 0;
+    ViewData["Title"] = isEdit ? "Sửa danh mục" : "Thêm danh mục";
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-0">@(isEdit ? "Sửa danh mục điều hướng" : "Thêm danh mục điều hướng")</h3>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item">
+                            <a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a>
+                        </li>
+                        <li class="breadcrumb-item"><a asp-action="Index">Danh mục</a></li>
+                        <li class="breadcrumb-item active">@(isEdit ? "Chỉnh sửa" : "Tạo mới")</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="app-content">
+        <div class="container-fluid">
+            <div class="card card-primary card-outline">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Thông tin danh mục</h3>
+                </div>
+                <form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.MenuID" method="post">
+                    <div class="card-body">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <input asp-for="MenuID" type="hidden" />
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="MenuName" class="form-label">Tên danh mục</label>
+                                <input asp-for="MenuName" class="form-control" />
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="ParentID" class="form-label">Danh mục cha</label>
+                                <select asp-for="ParentID" asp-items="Model.ParentOptions" class="form-select"></select>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Position" class="form-label">Vị trí hiển thị</label>
+                                <select asp-for="Position" asp-items="Model.PositionOptions" class="form-select"></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="ControllerName" class="form-label">Controller</label>
+                                <input asp-for="ControllerName" class="form-control" placeholder="News" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="ActionName" class="form-label">Action</label>
+                                <input asp-for="ActionName" class="form-control" placeholder="Category" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Link" class="form-label">Đường dẫn tùy chỉnh</label>
+                                <input asp-for="Link" class="form-control" placeholder="/News/Category/2" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="MenuOrder" class="form-label">Thứ tự</label>
+                                <input asp-for="MenuOrder" class="form-control" />
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsActive" class="form-check-input" />
+                                    <label asp-for="IsActive" class="form-check-label">Đang hiển thị</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="alert alert-light border mb-0">
+                                    Nếu để trống <strong>Đường dẫn tùy chỉnh</strong>, hệ thống sẽ tự tạo từ <code>Controller/Action</code>.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-outline-secondary">Quay lại</a>
+                        <button type="submit" class="btn btn-primary">
+                            @(isEdit ? "Lưu thay đổi" : "Tạo danh mục")
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

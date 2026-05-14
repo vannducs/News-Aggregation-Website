@@ -1,0 +1,367 @@
+@model NewsAggregator.Models.ViewModels.PostDetailsViewModel
+@{
+    ViewData["Title"] = Model.Post.Title;
+}
+
+<style>
+/* ── Comments ─────────────────────────────────────────── */
+.cmt-section{margin-top:40px}
+.cmt-section-title{font-size:1.2rem;font-weight:800;color:#1a1a2e;border-bottom:3px solid #e43f5a;padding-bottom:8px;margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.cmt-count-badge{background:#e43f5a;color:#fff;font-size:.75rem;padding:2px 8px;border-radius:12px}
+/* form */
+.cmt-form-card{background:#fff;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,.08);padding:24px;margin-bottom:28px}
+.cmt-form-card h5{font-size:.95rem;font-weight:700;color:#333;margin-bottom:16px}
+.cmt-user-bar{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f8f9fa;border-radius:8px;margin-bottom:16px;font-size:.88rem}
+.cmt-user-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover}
+.form-ctrl{width:100%;padding:10px 14px;border:1.5px solid #e5e5e5;border-radius:8px;font-size:.9rem;transition:.2s;outline:none;resize:vertical}
+.form-ctrl:focus{border-color:#e43f5a;box-shadow:0 0 0 3px rgba(228,63,90,.1)}
+.char-count{font-size:.75rem;color:#aaa;text-align:right;margin-top:4px}
+.char-count.warn{color:#e43f5a}
+.btn-submit{background:#e43f5a;color:#fff;border:none;padding:10px 26px;border-radius:8px;font-weight:700;font-size:.9rem;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-submit:hover{background:#c0392b;transform:translateY(-1px)}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+/* list */
+.cmt-sort-bar{display:flex;gap:8px;margin-bottom:16px}
+.cmt-sort-btn{background:none;border:1.5px solid #e0e0e0;border-radius:6px;padding:5px 14px;font-size:.8rem;font-weight:600;cursor:pointer;color:#666;transition:.18s}
+.cmt-sort-btn.active,.cmt-sort-btn:hover{background:#e43f5a;border-color:#e43f5a;color:#fff}
+.cmt-item{display:flex;gap:14px;margin-bottom:20px;animation:fadeIn .3s ease}
+@@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.cmt-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:#fff;flex-shrink:0;text-transform:uppercase}
+.cmt-body{flex:1;background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.cmt-header{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.cmt-name{font-weight:700;font-size:.9rem;color:#1a1a2e}
+.cmt-time{font-size:.75rem;color:#aaa;margin-left:auto}
+.cmt-content{font-size:.88rem;color:#444;line-height:1.6;margin-bottom:10px}
+.cmt-actions{display:flex;gap:12px;align-items:center}
+.btn-like{background:none;border:none;padding:0;font-size:.8rem;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:4px;transition:.18s}
+.btn-like:hover,.btn-like.liked{color:#e43f5a}
+.btn-like.liked .fa{font-weight:900}
+.btn-reply-toggle{background:none;border:none;padding:0;font-size:.8rem;color:#888;cursor:pointer;transition:.18s}
+.btn-reply-toggle:hover{color:#e43f5a}
+/* reply inline form */
+.reply-form{margin-top:12px;display:none;background:#f8f9fa;border-radius:8px;padding:12px}
+.reply-form.show{display:block;animation:fadeIn .2s ease}
+.reply-form textarea{width:100%;border:1.5px solid #e5e5e5;border-radius:6px;padding:8px 12px;font-size:.85rem;outline:none;resize:none;transition:.2s}
+.reply-form textarea:focus{border-color:#e43f5a}
+.reply-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.btn-cancel-reply{background:none;border:1px solid #ccc;border-radius:6px;padding:5px 14px;font-size:.8rem;cursor:pointer;color:#666}
+.btn-send-reply{background:#e43f5a;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:.8rem;cursor:pointer;font-weight:700}
+/* load more */
+.btn-load-more{display:block;margin:20px auto 0;background:#fff;border:2px solid #e43f5a;color:#e43f5a;border-radius:8px;padding:9px 28px;font-weight:700;font-size:.88rem;cursor:pointer;transition:.2s}
+.btn-load-more:hover{background:#e43f5a;color:#fff}
+/* toast */
+.toast-wrap{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast-msg{background:#2ecc71;color:#fff;padding:14px 20px;border-radius:10px;font-size:.9rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.18);animation:slideIn .3s ease;display:flex;align-items:center;gap:10px}
+.toast-msg.error{background:#e43f5a}
+@@keyframes slideIn{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+</style>
+
+<section class="section-padding">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8">
+        <article>
+          <div class="mb-3">
+            <a class="post-category" asp-controller="Home" asp-action="Category" asp-route-id="@Model.Post.MenuID">
+              @(Model.Post.Menu?.MenuName ?? "Tin tức")
+            </a>
+            <h1 class="mt-3 mb-3">@Model.Post.Title</h1>
+            <div class="post-meta">
+              <span class="posted-time"><i class="fa fa-clock-o mr-2"></i>@Model.Post.CreatedDate.ToString("dd/MM/yyyy HH:mm")</span>
+              <span class="post-author">Tác giả: @(Model.Post.Author ?? "Ban biên tập")</span>
+              <span class="ml-3"><i class="fa fa-eye mr-2"></i>@Model.Post.ViewCount lượt xem</span>
+              <span class="ml-3"><i class="fa fa-comment-o mr-2"></i>@Model.Comments.Count bình luận</span>
+            </div>
+          </div>
+
+          @if(!string.IsNullOrWhiteSpace(Model.Post.Images)){
+            <div class="mb-4"><img class="img-fluid w-100" src="@Model.Post.Images" alt="@Model.Post.Title"/></div>
+          }
+          @if(!string.IsNullOrWhiteSpace(Model.Post.Abstract)){
+            <div class="alert alert-light border">@Model.Post.Abstract</div>
+          }
+          <div class="post-content"><p style="white-space:pre-line">@Model.Post.Contents</p></div>
+        </article>
+
+        @* ===== COMMENTS ===== *@
+        <div class="cmt-section">
+          <div class="cmt-section-title">
+            <i class="fa fa-comments-o"></i>
+            Bình luận
+            <span class="cmt-count-badge" id="cmtCountBadge">@Model.Comments.Count</span>
+          </div>
+
+          @* ── Form gửi bình luận ── *@
+          <div class="cmt-form-card">
+            <h5><i class="fa fa-pencil mr-2"></i>Viết bình luận</h5>
+            @if(TempData["CommentMessage"] is string msg){
+              <div id="serverMsg" data-msg="@msg"></div>
+            }
+            <form asp-action="AddComment" method="post" id="cmtForm">
+              @Html.AntiForgeryToken()
+              <input asp-for="CommentForm.PostID" type="hidden"/>
+              <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+              @if(User.Identity?.IsAuthenticated != true){
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <input asp-for="CommentForm.AuthorName" class="form-ctrl" placeholder="Họ tên *"/>
+                    <span asp-validation-for="CommentForm.AuthorName" class="text-danger small"></span>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <input asp-for="CommentForm.AuthorEmail" class="form-ctrl" placeholder="Email (tùy chọn)"/>
+                    <span asp-validation-for="CommentForm.AuthorEmail" class="text-danger small"></span>
+                  </div>
+                </div>
+              } else {
+                <div class="cmt-user-bar mb-3">
+                  <div class="cmt-avatar" style="background:#e43f5a;width:36px;height:36px;font-size:.85rem">
+                    @((User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "U").Substring(0,1).ToUpper())
+                  </div>
+                  <span>Bạn đang bình luận với tài khoản <strong>@(User.FindFirst("FullName")?.Value ?? User.Identity?.Name)</strong></span>
+                </div>
+              }
+              <textarea asp-for="CommentForm.Content" class="form-ctrl" rows="4"
+                        placeholder="Chia sẻ suy nghĩ của bạn..." id="cmtContent"
+                        maxlength="1000"></textarea>
+              <div class="char-count" id="charCount">0 / 1000 ký tự</div>
+              <span asp-validation-for="CommentForm.Content" class="text-danger small"></span>
+              <div class="mt-3">
+                <button type="submit" class="btn-submit" id="cmtSubmit">
+                  <i class="fa fa-paper-plane"></i> Gửi bình luận
+                </button>
+              </div>
+            </form>
+          </div>
+
+          @* ── Danh sách bình luận ── *@
+          @if(Model.Comments.Any()){
+            <div class="cmt-sort-bar">
+              <button class="cmt-sort-btn active" onclick="sortComments('newest',this)">Mới nhất</button>
+              <button class="cmt-sort-btn" onclick="sortComments('oldest',this)">Cũ nhất</button>
+            </div>
+            <div id="cmtList">
+              @foreach(var c in Model.Comments){
+                var initials = c.AuthorName.Length > 0 ? c.AuthorName.Substring(0,1).ToUpper() : "?";
+                var avatarColor = GetAvatarColor(c.AuthorName);
+                <div class="cmt-item" data-id="@c.CommentID" data-ts="@c.CreatedAt.Ticks">
+                  <div class="cmt-avatar" style="background:@avatarColor">@initials</div>
+                  <div class="cmt-body">
+                    <div class="cmt-header">
+                      <span class="cmt-name">@c.AuthorName</span>
+                      <span class="cmt-time" data-ts="@c.CreatedAt.ToString("o")">@c.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                    <div class="cmt-content">@c.Content</div>
+                    <div class="cmt-actions">
+                      <button class="btn-like" onclick="toggleLike(this)" title="Thích">
+                        <i class="fa fa-heart-o"></i>
+                        <span class="like-num">0</span>
+                      </button>
+                      <button class="btn-reply-toggle" onclick="toggleReply(this)">
+                        <i class="fa fa-reply mr-1"></i>Trả lời
+                      </button>
+                    </div>
+                    <div class="reply-form">
+                      <textarea rows="2" placeholder="Viết câu trả lời..." class="reply-txt"></textarea>
+                      <div class="reply-actions">
+                        <button class="btn-cancel-reply" onclick="cancelReply(this)">Hủy</button>
+                        <button class="btn-send-reply" onclick="sendReply(this,'@c.AuthorName',@Model.Post.PostID)"><i class="fa fa-paper-plane mr-1"></i>Gửi</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          } else {
+            <div id="cmtList">
+              <div class="text-center py-4 text-muted" id="emptyMsg">
+                <i class="fa fa-comment-o" style="font-size:2.5rem;color:#ddd"></i>
+                <p class="mt-2">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="sidebar sidebar-right">
+          <div class="widget">
+            <h3 class="news-title"><span>Bài viết liên quan</span></h3>
+            @if(Model.RelatedPosts.Any()){
+              <div class="post-list-block">
+                @foreach(var p in Model.RelatedPosts){
+                  <article class="post-block-wrapper post-float clearfix mb-3">
+                    <div class="post-thumbnail">
+                      <a asp-controller="Posts" asp-action="Details" asp-route-id="@p.PostID">
+                        <img class="img-fluid" src="@(string.IsNullOrWhiteSpace(p.Images)?"/images/news/news-06.jpg":p.Images)" alt="@p.Title"/>
+                      </a>
+                    </div>
+                    <div class="post-content">
+                      <h2 class="post-title title-sm">
+                        <a asp-controller="Posts" asp-action="Details" asp-route-id="@p.PostID">@p.Title</a>
+                      </h2>
+                      <div class="post-meta">
+                        <span class="posted-time"><i class="fa fa-clock-o mr-2"></i>@p.CreatedDate.ToString("dd/MM/yyyy")</span>
+                      </div>
+                    </div>
+                  </article>
+                }
+              </div>
+            } else {
+              <div class="text-muted">Không có bài viết liên quan.</div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+@* Toast container *@
+<div class="toast-wrap" id="toastWrap"></div>
+
+@functions {
+    string GetAvatarColor(string name){
+        var colors = new[]{"#e43f5a","#6c5ce7","#00b894","#0984e3","#fd79a8","#e17055","#00cec9","#a29bfe"};
+        int h = 0; foreach(char c in name) h = (h*31 + c) % colors.Length;
+        return colors[Math.Abs(h)];
+    }
+}
+
+@section Scripts {
+<partial name="_ValidationScriptsPartial"/>
+<script>
+(function(){
+  // ── Char counter ───────────────────────────────────────────────
+  const ta = document.getElementById('cmtContent');
+  const cc = document.getElementById('charCount');
+  if(ta && cc){
+    ta.addEventListener('input', function(){
+      const n = this.value.length;
+      cc.textContent = n + ' / 1000 ký tự';
+      cc.classList.toggle('warn', n > 900);
+    });
+  }
+
+  // ── Toast ──────────────────────────────────────────────────────
+  function toast(msg, type='success'){
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = 'toast-msg' + (type==='error'?' error':'');
+    el.innerHTML = `<i class="fa fa-${type==='error'?'times':'check'}-circle"></i> ${msg}`;
+    wrap.appendChild(el);
+    setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(),400); }, 3500);
+  }
+
+  // Show server success message as toast
+  const srv = document.getElementById('serverMsg');
+  if(srv) toast(srv.dataset.msg);
+
+  // ── Submit loading state ───────────────────────────────────────
+  const form = document.getElementById('cmtForm');
+  const btn  = document.getElementById('cmtSubmit');
+  if(form && btn){
+    form.addEventListener('submit', function(){
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang gửi...';
+    });
+  }
+
+  // ── Relative time ─────────────────────────────────────────────
+  function relTime(iso){
+    const diff = (Date.now() - new Date(iso)) / 1000;
+    if(diff < 60)   return 'Vừa xong';
+    if(diff < 3600) return Math.floor(diff/60) + ' phút trước';
+    if(diff < 86400)return Math.floor(diff/3600) + ' giờ trước';
+    if(diff < 172800) return 'Hôm qua';
+    return new Date(iso).toLocaleDateString('vi-VN');
+  }
+  document.querySelectorAll('.cmt-time[data-ts]').forEach(el => {
+    el.textContent = relTime(el.dataset.ts);
+    el.title = el.dataset.ts;
+  });
+
+  // ── Like (localStorage-based) ──────────────────────────────────
+  const likeKey = 'liked_cmts';
+  function getLiked(){ try{ return JSON.parse(localStorage.getItem(likeKey)||'{}'); }catch(e){return{};} }
+
+  // init likes from storage
+  document.querySelectorAll('.cmt-item').forEach(item => {
+    const id = item.dataset.id;
+    const liked = getLiked();
+    const btn = item.querySelector('.btn-like');
+    const num = btn.querySelector('.like-num');
+    const count = parseInt(localStorage.getItem('lc_'+id)||'0');
+    num.textContent = count;
+    if(liked[id]){ btn.classList.add('liked'); btn.querySelector('i').className='fa fa-heart'; }
+  });
+
+  window.toggleLike = function(btn){
+    const item = btn.closest('.cmt-item');
+    const id   = item.dataset.id;
+    const num  = btn.querySelector('.like-num');
+    const liked = getLiked();
+    let count = parseInt(localStorage.getItem('lc_'+id)||'0');
+    if(liked[id]){
+      delete liked[id]; count = Math.max(0, count-1);
+      btn.classList.remove('liked'); btn.querySelector('i').className='fa fa-heart-o';
+    } else {
+      liked[id] = true; count++;
+      btn.classList.add('liked'); btn.querySelector('i').className='fa fa-heart';
+      btn.style.transform='scale(1.3)'; setTimeout(()=>btn.style.transform='',200);
+    }
+    num.textContent = count;
+    localStorage.setItem('lc_'+id, count);
+    localStorage.setItem(likeKey, JSON.stringify(liked));
+  };
+
+  // ── Reply ──────────────────────────────────────────────────────
+  window.toggleReply = function(btn){
+    const form = btn.closest('.cmt-body').querySelector('.reply-form');
+    form.classList.toggle('show');
+    if(form.classList.contains('show')) form.querySelector('textarea').focus();
+  };
+
+  window.cancelReply = function(btn){
+    btn.closest('.reply-form').classList.remove('show');
+  };
+
+  window.sendReply = function(btn, toName, postId){
+    const rf  = btn.closest('.reply-form');
+    const txt = rf.querySelector('.reply-txt');
+    const val = txt.value.trim();
+    if(!val){ txt.focus(); txt.style.borderColor='#e43f5a'; return; }
+    txt.style.borderColor='';
+
+    // Build a comment content prepending toName
+    const content = '@@' + toName + ': ' + val;
+
+    // Submit via hidden form to AddComment
+    const f = document.createElement('form');
+    f.method = 'post'; f.action = '/Posts/AddComment';
+    const addHidden = (n,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; f.appendChild(i); };
+    addHidden('PostID', postId);
+    addHidden('AuthorName', '');  // server will use logged-in name or redirect
+    addHidden('Content', content);
+    // Copy CSRF token
+    const csrf = document.querySelector('[name="__RequestVerificationToken"]');
+    if(csrf) addHidden('__RequestVerificationToken', csrf.value);
+    document.body.appendChild(f);
+    f.submit();
+  };
+
+  // ── Sort comments (client-side) ────────────────────────────────
+  window.sortComments = function(order, btn){
+    document.querySelectorAll('.cmt-sort-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const list = document.getElementById('cmtList');
+    const items = [...list.querySelectorAll('.cmt-item')];
+    items.sort((a,b) => {
+      const ta = parseInt(a.dataset.ts||'0');
+      const tb = parseInt(b.dataset.ts||'0');
+      return order==='newest' ? tb-ta : ta-tb;
+    });
+    items.forEach(el => list.appendChild(el));
+  };
+})();
+</script>
+}
