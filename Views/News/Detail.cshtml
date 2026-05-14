@@ -105,10 +105,9 @@
                     <div class="post-body">
 
                         @* Nội dung bài viết *@
-                        <div class="entry-content">
+                        <div class="entry-content article-content">
                             @if (!string.IsNullOrEmpty(Model.Contents))
                             {
-                                @* Bài có nội dung đầy đủ: ảnh nằm đúng vị trí trong content *@
                                 @Html.Raw(Model.Contents)
                             }
                             else
@@ -116,9 +115,9 @@
                                 @* Bài chỉ có RSS summary: hiện thumbnail + tóm tắt + link gốc *@
                                 @if (!string.IsNullOrEmpty(Model.Images))
                                 {
-                                    <div class="post-featured-image mb-4">
-                                        <img src="@Model.Images" class="img-fluid" alt="@Model.Title">
-                                    </div>
+                                    <figure>
+                                        <img src="@Model.Images" alt="@Model.Title" referrerpolicy="no-referrer" />
+                                    </figure>
                                 }
                                 <p>@Model.Abstract</p>
                                 <p>
@@ -285,42 +284,69 @@
 </section>
 @section Styles {
 <style>
-    /* ===== Fix ảnh trong nội dung bài viết ===== */
-
-    /* Ảnh không bị tràn, giữ tỉ lệ */
-    .entry-content img {
-        max-width: 100% !important;
-        width: auto !important;
-        height: auto !important;
-        display: block;
-        margin: 12px auto;
-        border-radius: 4px;
+    /* ===== Article content layout ===== */
+    .article-content {
+        max-width: 760px;
+        margin: 0 auto;
+        line-height: 1.8;
+        font-size: 17px;
     }
-    /* Ảnh broken → ẩn đi */
+
+    /* Every element respects container width */
+    .article-content * {
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    /* Images: always full-width, auto height */
+    .article-content img {
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
+        margin: 20px auto !important;
+        border-radius: 6px;
+        object-fit: contain;
+    }
+
+    /* Broken image → hide completely */
+    .article-content img.img-broken,
     .entry-content img.img-broken { display: none !important; }
 
-    /* Figure/picture: xóa khoảng trắng do fixed size */
+    /* Figure: full width, no fixed height */
+    .article-content figure,
+    .article-content picture,
     .entry-content figure,
     .entry-content picture {
-        max-width: 100% !important;
+        width: 100% !important;
         height: auto !important;
         min-height: 0 !important;
-        margin: 16px auto;
-        display: block;
-        text-align: center;
+        padding-top: 0 !important;
+        margin: 20px 0 !important;
+        display: block !important;
     }
-    .entry-content figure * {
+
+    /* Kill every height-related inline style on figure descendants */
+    .article-content figure *,
+    .article-content picture *,
+    .entry-content figure *,
+    .entry-content picture * {
         height: auto !important;
-        max-width: 100% !important;
+        min-height: 0 !important;
+        padding-top: 0 !important;
     }
+
+    /* Caption */
+    .article-content figcaption,
     .entry-content figcaption {
-        font-size: 13px;
-        color: #666;
-        margin-top: 6px;
+        font-size: 14px;
+        color: #777;
         font-style: italic;
         text-align: center;
+        margin-top: 8px;
+        padding: 0 8px;
     }
-    /* Xóa khoảng trắng của các wrapper ảnh phổ biến */
+
+    /* VnExpress / TuoiTre / DanTri image wrapper classes */
     .entry-content .VCSortableInPreviewMode,
     .entry-content .box_content_detail,
     .entry-content .fig-picture,
@@ -328,18 +354,17 @@
     .entry-content .article-body-image-wrapper,
     .entry-content .item_slide_show,
     .entry-content .imagefull,
-    .entry-content .image_article {
+    .entry-content .image_article,
+    .entry-content .clearfix { /* TuoiTre */
         height: auto !important;
         min-height: 0 !important;
         padding-top: 0 !important;
+        width: 100% !important;
     }
 
-    /* Ảnh đại diện đầu bài */
-    .post-featured-image img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 6px;
-    }
+    /* Reasonable paragraph spacing */
+    .article-content p { margin-bottom: 1rem; }
+
     .source-logo img { opacity: 0.85; }
     .source-logo img:hover { opacity: 1; }
 </style>
