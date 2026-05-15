@@ -12,7 +12,6 @@ namespace NewsAggregator.Services
             _db = db;
         }
 
-        // Xóa vĩnh viễn các mục đã ở thùng rác hơn 30 ngày
         public async Task PurgeOldDeletedItemsAsync()
         {
             var cutoff = DateTime.Now.AddDays(-30);
