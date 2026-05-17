@@ -133,10 +133,18 @@
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit"
                                                         class="btn btn-info btn-sm"
-                                                        title="Crawl ngay">
+                                                        title="Crawl ngay (Hangfire)">
                                                     <i class="bi bi-arrow-clockwise"></i>
                                                 </button>
                                             </form>
+
+                                            @* Nút test RSS trực tiếp *@
+                                            <a asp-area="Admin" asp-controller="Source"
+                                               asp-action="TestRss" asp-route-id="@source.SourceID"
+                                               class="btn btn-outline-secondary btn-sm"
+                                               title="Test RSS (chạy ngay, không qua Hangfire)">
+                                                <i class="bi bi-rss"></i>
+                                            </a>
 
                                             @* Nút xóa *@
                                             <form asp-area="Admin" asp-controller="Source"

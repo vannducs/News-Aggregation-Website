@@ -1,24 +1,20 @@
-using System.Xml.Linq;
-using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
 using NewsAggregator.Data;
 using NewsAggregator.Models;
 
 namespace NewsAggregator.Services.Crawlers
 {
-    /// <summary>
-    /// Crawler tổng quát cho bất kỳ nguồn RSS nào.
-    /// Tự động map category từ RSS sang Menu trong database.
-    /// </summary>
     public class GenericRssCrawler : BaseCrawler, INewsCrawler
     {
         private readonly Source _source;
+        private readonly IUniversalArticleExtractorService _extractor;
         private Dictionary<string, int>? _menuCache;
 
-        public GenericRssCrawler(AppDbContext db, HttpClient http, Source source)
+        public GenericRssCrawler(AppDbContext db, HttpClient http, Source source, IUniversalArticleExtractorService extractor)
             : base(db, http)
         {
             _source = source;
+            _extractor = extractor;
         }
 
         public async Task<int> CrawlAsync()
@@ -33,45 +29,30 @@ namespace NewsAggregator.Services.Crawlers
 
             try
             {
-                var xml = await _http.GetStringAsync(_source.RssUrl);
-                var doc = XDocument.Parse(xml);
-                var ns = doc.Root?.GetDefaultNamespace() ?? XNamespace.None;
+                // Dùng extractor: xử lý gzip, namespace media/dc/content tự động
+                var feedItems = await _extractor.GetRssFeedItemsAsync(_source.RssUrl);
+                Console.WriteLine($"[{_source.SourceName}] Tìm thấy {feedItems.Count} items từ RSS");
 
-                var items = doc.Descendants("item").ToList();
-                Console.WriteLine($"[{_source.SourceName}] Tìm thấy {items.Count} items từ RSS");
-
-                foreach (var item in items)
+                foreach (var feedItem in feedItems)
                 {
-                    var title      = item.Element("title")?.Value?.Trim();
-                    var link       = item.Element("link")?.Value?.Trim()
-                                  ?? item.Elements().FirstOrDefault(e => e.Name.LocalName == "link")?.Value?.Trim();
-                    var pubDateStr = item.Element("pubDate")?.Value;
-                    var description = item.Element("description")?.Value?.Trim();
+                    if (string.IsNullOrEmpty(feedItem.Url)) continue;
 
-                    // Thử lấy category từ RSS item
-                    var rssCategory = item.Element("category")?.Value?.Trim()
-                                   ?? item.Elements().FirstOrDefault(e => e.Name.LocalName == "category")?.Value?.Trim();
-
-                    if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(link)) continue;
-
-                    bool exists = await _db.Posts.AnyAsync(p => p.Link == link);
+                    bool exists = await _db.Posts.AnyAsync(p => p.Link == feedItem.Url);
                     if (exists) continue;
 
-                    var menuId = ResolveMenuId(rssCategory, title);
-                    var publishedAt = ParseDate(pubDateStr);
-                    var imageUrl = ExtractImageFromDescription(description ?? "");
-                    var cleanAbstract = StripHtml(description ?? "");
+                    var menuId   = ResolveMenuId(feedItem.Category, feedItem.Title);
+                    var baseUrl  = ContentHelper.ExtractBaseUrl(_source.WebsiteUrl ?? _source.RssUrl);
+                    var abstract_ = feedItem.Summary ?? "";
 
-                    var baseUrl = ContentHelper.ExtractBaseUrl(_source.WebsiteUrl ?? _source.RssUrl);
                     var post = new Post
                     {
-                        Title       = title,
-                        Abstract    = cleanAbstract.Length > 500 ? cleanAbstract[..500] : cleanAbstract,
-                        Contents    = FixContentImages(description ?? "", baseUrl),
-                        Link        = link,
-                        Images      = imageUrl,
-                        Author      = _source.SourceName,
-                        CreatedDate = publishedAt,
+                        Title       = feedItem.Title,
+                        Abstract    = abstract_.Length > 500 ? abstract_[..500] : abstract_,
+                        Contents    = FixContentImages(feedItem.Summary ?? "", baseUrl),
+                        Link        = feedItem.Url,
+                        Images      = feedItem.ImageUrl ?? "",
+                        Author      = feedItem.Author ?? _source.SourceName,
+                        CreatedDate = feedItem.PublishedDate ?? DateTime.Now,
                         CrawledAt   = DateTime.Now,
                         MenuID      = menuId,
                         SourceID    = _source.SourceID,
@@ -92,18 +73,15 @@ namespace NewsAggregator.Services.Crawlers
             return totalSaved;
         }
 
-        // Map RSS category → MenuID. Fallback về menu đầu tiên (Trang chủ) nếu không khớp.
         private int ResolveMenuId(string? rssCategory, string title)
         {
             if (!string.IsNullOrEmpty(rssCategory))
             {
                 var normalized = rssCategory.ToLowerInvariant().Trim();
 
-                // Tìm khớp chính xác
                 if (_menuCache!.TryGetValue(normalized, out var id))
                     return id;
 
-                // Tìm khớp một phần (RSS category chứa tên menu hoặc ngược lại)
                 foreach (var kv in _menuCache)
                 {
                     if (normalized.Contains(kv.Key) || kv.Key.Contains(normalized))
@@ -111,7 +89,6 @@ namespace NewsAggregator.Services.Crawlers
                 }
             }
 
-            // Fallback: đoán từ tiêu đề bài viết theo từ khóa
             var titleLower = title.ToLowerInvariant();
             var keywordMap = new Dictionary<string, string[]>
             {
@@ -128,7 +105,6 @@ namespace NewsAggregator.Services.Crawlers
             {
                 if (kv.Value.Any(kw => titleLower.Contains(kw)))
                 {
-                    // Tìm menu khớp với key
                     foreach (var menuKv in _menuCache!)
                     {
                         if (menuKv.Key.Contains(kv.Key) || kv.Key.Contains(menuKv.Key))
@@ -137,7 +113,6 @@ namespace NewsAggregator.Services.Crawlers
                 }
             }
 
-            // Trả về menu đầu tiên (Trang chủ) làm fallback cuối
             return _menuCache!.Values.First();
         }
     }

@@ -5,7 +5,7 @@ using NewsAggregator.Services.Crawlers;
 
 namespace NewsAggregator.Services
 {
-    public class CrawlerService(AppDbContext db, IHttpClientFactory httpClientFactory)
+    public class CrawlerService(AppDbContext db, IHttpClientFactory httpClientFactory, IUniversalArticleExtractorService extractor)
     {
         public async Task RunAllAsync()
         {
@@ -44,7 +44,7 @@ namespace NewsAggregator.Services
                         : source.SourceName.Contains("Dân Trí", StringComparison.OrdinalIgnoreCase)
                           || source.SourceName.Contains("Dan Tri", StringComparison.OrdinalIgnoreCase)
                             ? new DanTriCrawler(db, http)
-                            : new GenericRssCrawler(db, http, source);
+                            : new GenericRssCrawler(db, http, source, extractor);
 
                 int count = await crawler.CrawlAsync();
 
@@ -67,7 +67,21 @@ namespace NewsAggregator.Services
         public async Task CrawlSourceByIdAsync(int sourceId)
         {
             var source = await db.Sources.FindAsync(sourceId);
-            if (source == null || !source.IsActive || source.IsDeleted) return;
+            if (source == null)
+            {
+                Console.WriteLine($"[CrawlNow] Không tìm thấy nguồn ID={sourceId}");
+                return;
+            }
+            if (source.IsDeleted)
+            {
+                Console.WriteLine($"[CrawlNow] Nguồn '{source.SourceName}' đã bị xóa — bỏ qua");
+                return;
+            }
+            if (!source.IsActive)
+            {
+                Console.WriteLine($"[CrawlNow] Nguồn '{source.SourceName}' đang tạm dừng — bỏ qua");
+                return;
+            }
 
             Console.WriteLine($"[CrawlNow] Bắt đầu crawl {source.SourceName}");
             await CrawlSourceAsync(source);

@@ -1,0 +1,111 @@
+@model List<NewsAggregator.Models.RssFeedItem>
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+    var sourceName = ViewData["SourceName"] as string;
+    var rssUrl     = ViewData["RssUrl"] as string;
+}
+
+<main class="app-main">
+    <div class="app-content-header">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-0">Test RSS — @sourceName</h3>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item">
+                            <a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a asp-area="Admin" asp-controller="Source" asp-action="Index">Nguồn báo</a>
+                        </li>
+                        <li class="breadcrumb-item active">Test RSS</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-content">
+        <div class="container-fluid">
+
+            <div class="alert @(Model.Count > 0 ? "alert-success" : "alert-warning")">
+                <strong>@rssUrl</strong><br />
+                Tìm thấy <strong>@Model.Count</strong> bài trong RSS feed.
+                @if (Model.Count == 0)
+                {
+                    <span>Kiểm tra lại URL hoặc xem log console.</span>
+                }
+            </div>
+
+            @if (Model.Count > 0)
+            {
+                <div class="card">
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Tiêu đề</th>
+                                    <th>Danh mục</th>
+                                    <th>Ngày</th>
+                                    <th>Ảnh</th>
+                                    <th>Link</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.Count; i++)
+                                {
+                                    var item = Model[i];
+                                    <tr>
+                                        <td>@(i + 1)</td>
+                                        <td>
+                                            <strong>@item.Title</strong>
+                                            @if (!string.IsNullOrEmpty(item.Author))
+                                            {
+                                                <br /><small class="text-muted">@item.Author</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(item.Category))
+                                            {
+                                                <span class="badge bg-secondary">@item.Category</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <small>@(item.PublishedDate?.ToString("dd/MM HH:mm") ?? "—")</small>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                            {
+                                                <img src="@item.ImageUrl" style="height:40px;width:60px;object-fit:cover" />
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <a href="@item.Url" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            <div class="mt-3">
+                <a asp-area="Admin" asp-controller="Source" asp-action="Index"
+                   class="btn btn-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Quay lại
+                </a>
+            </div>
+
+        </div>
+    </div>
+</main>

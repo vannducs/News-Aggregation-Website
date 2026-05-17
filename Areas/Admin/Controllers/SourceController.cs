@@ -3,25 +3,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NewsAggregator.Data;
 using NewsAggregator.Models;
+using NewsAggregator.Services;
 
 namespace NewsAggregator.Areas.Admin.Controllers;
 
 [Area("Admin")]
 [Authorize(Roles = UserRoles.StaffRoles)]
-public class SourceController : Controller
+public class SourceController(AppDbContext db, IUniversalArticleExtractorService extractor) : Controller
 {
-    private readonly AppDbContext _db;
-
-    public SourceController(AppDbContext db)
-    {
-        _db = db;
-    }
-
     public async Task<IActionResult> Index()
     {
         ViewData["Title"] = "Quản lý nguồn báo";
 
-        var sources = await _db.Sources
+        var sources = await db.Sources
             .Where(s => !s.IsDeleted)
             .OrderBy(s => s.SourceName)
             .ToListAsync();
@@ -41,7 +35,7 @@ public class SourceController : Controller
     {
         if (ModelState.IsValid)
         {
-            bool exists = await _db.Sources
+            bool exists = await db.Sources
                 .AnyAsync(s => s.SourceName == source.SourceName);
 
             if (exists)
@@ -52,26 +46,25 @@ public class SourceController : Controller
             }
 
             source.IsActive = true;
-            _db.Sources.Add(source);
-            await _db.SaveChangesAsync();
+            db.Sources.Add(source);
+            await db.SaveChangesAsync();
 
-            Hangfire.BackgroundJob.Enqueue<Services.CrawlerService>(
+            Hangfire.BackgroundJob.Enqueue<CrawlerService>(
                 service => service.RunAllAsync());
 
-            TempData["Success"] = 
+            TempData["Success"] =
                 $"Thêm nguồn '{source.SourceName}' thành công! Đang crawl bài viết...";
             return RedirectToAction(nameof(Index));
         }
         return View(source);
     }
 
-
     // GET: /Admin/Source/Edit/5
     public async Task<IActionResult> Edit(int id)
     {
         ViewData["Title"] = "Sửa nguồn báo";
 
-        var source = await _db.Sources.FindAsync(id);
+        var source = await db.Sources.FindAsync(id);
         if (source == null) return NotFound();
 
         return View(source);
@@ -86,8 +79,8 @@ public class SourceController : Controller
 
         if (ModelState.IsValid)
         {
-            _db.Sources.Update(source);
-            await _db.SaveChangesAsync();
+            db.Sources.Update(source);
+            await db.SaveChangesAsync();
 
             TempData["Success"] = "Cập nhật nguồn báo thành công!";
             return RedirectToAction(nameof(Index));
@@ -96,17 +89,16 @@ public class SourceController : Controller
     }
 
     // POST: /Admin/Source/ToggleActive/5
-    // Bật/tắt trạng thái crawl
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleActive(int id)
     {
-        var source = await _db.Sources.FindAsync(id);
+        var source = await db.Sources.FindAsync(id);
         if (source == null) return NotFound();
 
         source.IsActive = !source.IsActive;
-        _db.Sources.Update(source);
-        await _db.SaveChangesAsync();
+        db.Sources.Update(source);
+        await db.SaveChangesAsync();
 
         TempData["Success"] = source.IsActive
             ? $"Đã bật crawl cho {source.SourceName}"
@@ -120,41 +112,54 @@ public class SourceController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var source = await _db.Sources.FindAsync(id);
+        var source = await db.Sources.FindAsync(id);
         if (source == null) return NotFound();
 
         source.IsDeleted = true;
         source.DeletedAt = DateTime.Now;
         source.IsActive = false;
-        _db.Sources.Update(source);
-        await _db.SaveChangesAsync();
+        db.Sources.Update(source);
+        await db.SaveChangesAsync();
 
         TempData["Success"] = $"Đã chuyển '{source.SourceName}' vào thùng rác!";
         return RedirectToAction(nameof(Index));
     }
 
     // POST: /Admin/Source/CrawlNow/5
-    // Trigger crawl ngay lập tức cho 1 nguồn
-    // POST: /Admin/Source/CrawlNow/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CrawlNow(int id)
     {
-        var source = await _db.Sources.FindAsync(id);
+        var source = await db.Sources.FindAsync(id);
         if (source == null) return NotFound();
 
         if (!source.IsActive)
         {
             source.IsActive = true;
-            _db.Sources.Update(source);
-            await _db.SaveChangesAsync();
+            db.Sources.Update(source);
+            await db.SaveChangesAsync();
         }
 
-        Hangfire.BackgroundJob.Enqueue<Services.CrawlerService>(
+        Hangfire.BackgroundJob.Enqueue<CrawlerService>(
             service => service.CrawlSourceByIdAsync(id));
 
-        TempData["Success"] = 
+        TempData["Success"] =
             $"Đã kích hoạt crawl cho '{source.SourceName}'! Kiểm tra tại /hangfire";
         return RedirectToAction(nameof(Index));
+    }
+
+    // GET: /Admin/Source/TestRss/5
+    // Chạy trực tiếp (không qua Hangfire) để test RSS — hữu ích khi debug nguồn mới
+    public async Task<IActionResult> TestRss(int id)
+    {
+        var source = await db.Sources.FindAsync(id);
+        if (source == null) return NotFound();
+
+        var items = await extractor.GetRssFeedItemsAsync(source.RssUrl);
+
+        ViewData["Title"] = $"Test RSS — {source.SourceName}";
+        ViewData["SourceName"] = source.SourceName;
+        ViewData["RssUrl"] = source.RssUrl;
+        return View(items);
     }
 }

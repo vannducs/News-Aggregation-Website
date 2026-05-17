@@ -1,5 +1,6 @@
 using Hangfire;
 using System.Diagnostics;
+using System.Net;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -17,15 +18,38 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// HTTP CLIENT — crawl
+// HTTP CLIENT — crawl (cùng handler với ArticleExtractor để tránh lỗi gzip 0x1F)
 builder.Services.AddHttpClient("crawler", client =>
 {
-    client.DefaultRequestHeaders.Add(
-        "User-Agent",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-        "AppleWebKit/537.36 (KHTML, like Gecko) " +
-        "Chrome/120.0.0.0 Safari/537.36");
+    client.DefaultRequestHeaders.Add("User-Agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+    client.DefaultRequestHeaders.Add("Accept-Language", "vi-VN,vi;q=0.9,en;q=0.8");
     client.Timeout = TimeSpan.FromSeconds(30);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AutomaticDecompression = DecompressionMethods.GZip
+                           | DecompressionMethods.Deflate
+                           | DecompressionMethods.Brotli,
+    AllowAutoRedirect = true,
+    MaxAutomaticRedirections = 5,
+});
+
+// HTTP CLIENT — universal article extractor (với auto decompression để tránh lỗi 0x1F gzip)
+builder.Services.AddHttpClient("ArticleExtractor", client =>
+{
+    client.DefaultRequestHeaders.Add("User-Agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+    client.DefaultRequestHeaders.Add("Accept",
+        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+    client.DefaultRequestHeaders.Add("Accept-Language", "vi-VN,vi;q=0.9,en;q=0.8");
+    client.Timeout = TimeSpan.FromSeconds(20);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AutomaticDecompression = DecompressionMethods.GZip
+                           | DecompressionMethods.Deflate
+                           | DecompressionMethods.Brotli,
+    AllowAutoRedirect = true,
+    MaxAutomaticRedirections = 5,
 });
 
 // SERVICES
@@ -33,6 +57,7 @@ builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<TrashPurgeService>();
 builder.Services.AddScoped<PostImageFixService>();
+builder.Services.AddScoped<IUniversalArticleExtractorService, UniversalArticleExtractorService>();
 
 // HANGFIRE
 builder.Services.AddHangfire(config =>
