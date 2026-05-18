@@ -5,23 +5,25 @@ using NewsAggregator.Data;
 
 namespace NewsAggregator.Controllers
 {
-    public class BaseController : Controller
+    public class BaseController(AppDbContext db) : Controller
     {
-        protected readonly AppDbContext _db;
-        public BaseController(AppDbContext db)
-        {
-            _db = db;
-        }
+        protected readonly AppDbContext _db = db;
         public override async Task OnActionExecutionAsync(
             ActionExecutingContext context,
             ActionExecutionDelegate next)
         {
-            var menus = await _db.Menus
-                .Where(m=>m.IsActive && m.Levels == 1)
-                .OrderBy(m=>m.MenuOrder)
+            ViewBag.Menus = await _db.Menus
+                .AsNoTracking()
+                .Where(m => m.IsActive && m.Levels == 1)
+                .OrderBy(m => m.MenuOrder)
                 .ToListAsync();
 
-            ViewBag.Menus = menus;
+            ViewBag.Sources = await _db.Sources
+                .AsNoTracking()
+                .Where(s => s.IsActive && !s.IsDeleted)
+                .OrderBy(s => s.SourceName)
+                .ToListAsync();
+
             await next();
         }
     }

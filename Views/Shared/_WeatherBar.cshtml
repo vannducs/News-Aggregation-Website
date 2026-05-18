@@ -1,0 +1,211 @@
+@model WeatherInfo
+@{
+    var now      = DateTime.Now;
+    var dayNames = new[] { "Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy" };
+    var dayName  = dayNames[(int)now.DayOfWeek];
+    var dateStr  = $"{dayName}, {now.Day}/{now.Month}/{now.Year}";
+}
+
+@* Critical dropdown styles — inline to bypass CSS cache & specificity wars *@
+<style>
+#weatherDropdown {
+    position: fixed !important;
+    width: 320px !important;
+    background: #ffffff !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.20) !important;
+    z-index: 999999 !important;
+    overflow: hidden !important;
+    color: #333 !important;
+    font-size: 0.85rem !important;
+    animation: vneDropIn 0.15s ease;
+}
+@@keyframes vneDropIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+#weatherDropdown .vne-dropdown-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 13px 16px !important;
+    border-bottom: 1px solid #efefef !important;
+    font-size: 0.85rem !important;
+    color: #444 !important;
+    background: #fff !important;
+}
+#weatherDropdown .vne-dropdown-header .material-symbols-outlined {
+    font-size: 1.1rem !important;
+    color: #888 !important;
+}
+#weatherDropdown .vne-dropdown-header .vne-header-label {
+    flex: 1 !important;
+}
+/* Toggle switch */
+.vne-toggle-switch {
+    position: relative !important;
+    display: inline-block !important;
+    width: 40px !important;
+    height: 22px !important;
+    flex-shrink: 0 !important;
+    margin-bottom: 0 !important;
+}
+.vne-toggle-switch input[type="checkbox"] {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+.vne-slider {
+    position: absolute !important;
+    cursor: pointer !important;
+    top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important;
+    background: #ccc !important;
+    border-radius: 22px !important;
+    transition: background 0.3s !important;
+    display: block !important;
+}
+.vne-slider::before {
+    content: "" !important;
+    position: absolute !important;
+    width: 16px !important;
+    height: 16px !important;
+    left: 3px !important;
+    bottom: 3px !important;
+    background: #fff !important;
+    border-radius: 50% !important;
+    transition: transform 0.3s !important;
+}
+.vne-toggle-switch input[type="checkbox"]:checked + .vne-slider {
+    background: #e81c23 !important;
+}
+.vne-toggle-switch input[type="checkbox"]:checked + .vne-slider::before {
+    transform: translateX(18px) !important;
+}
+/* Search box */
+#weatherDropdown .vne-search-box {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 10px 14px !important;
+    border-bottom: 1px solid #efefef !important;
+    background: #fff !important;
+}
+#weatherDropdown .vne-search-box .material-symbols-outlined {
+    font-size: 1.1rem !important;
+    color: #aaa !important;
+}
+#weatherDropdown .vne-search-box input {
+    border: none !important;
+    outline: none !important;
+    font-size: 0.85rem !important;
+    flex: 1 !important;
+    color: #333 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+#weatherDropdown .vne-search-box input::placeholder { color: #bbb !important; }
+/* City list */
+#weatherDropdown .vne-city-list {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 6px 0 !important;
+    max-height: 240px !important;
+    overflow-y: auto !important;
+    background: #fff !important;
+}
+#weatherDropdown .vne-city-list li {
+    list-style: none !important;
+    padding: 9px 16px !important;
+    cursor: pointer !important;
+    font-size: 0.85rem !important;
+    color: #333 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    transition: background 0.1s !important;
+    background: transparent !important;
+}
+#weatherDropdown .vne-city-list li:hover { background: #f5f5f5 !important; }
+#weatherDropdown .vne-city-list li.active { color: #e81c23 !important; font-weight: 600 !important; }
+#weatherDropdown .vne-default-tag {
+    font-size: 0.72rem !important;
+    color: #aaa !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+}
+#weatherDropdown .vne-default-tag .material-symbols-outlined {
+    font-size: 0.9rem !important;
+    color: #e81c23 !important;
+}
+#weatherDropdown .vne-city-list li > .material-symbols-outlined {
+    font-size: 1rem !important;
+    color: #e81c23 !important;
+}
+/* Overlay */
+#weatherOverlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 999998 !important;
+    background: transparent !important;
+    cursor: default !important;
+}
+@@media (max-width: 576px) {
+    #weatherDropdown { width: 280px !important; }
+}
+</style>
+
+<div class="vne-weather-bar" id="weatherBar">
+
+    @* Trigger: tên thành phố + chevron + icon + nhiệt độ *@
+    <div class="vne-weather-trigger" id="weatherTrigger" onclick="toggleWeatherDropdown()">
+        <span class="vne-city-name" id="weatherCityName">@Model.City</span>
+        <span class="material-symbols-outlined vne-chevron" id="weatherChevron">expand_more</span>
+        <span class="material-symbols-outlined vne-weather-icon" id="weatherIcon">@GetMaterialIcon(Model.Icon)</span>
+        <span class="vne-temp" id="weatherTemp">@((int)Model.Temperature)°</span>
+    </div>
+
+    <span class="vne-divider">|</span>
+
+    @* Ngày *@
+    <span class="vne-date">@dateStr</span>
+</div>
+
+@* Dropdown — được JS move sang <body> lúc DOMContentLoaded *@
+<div id="weatherDropdown" style="display:none">
+    <div class="vne-dropdown-header">
+        <span class="material-symbols-outlined">location_on</span>
+        <span class="vne-header-label">Tự động xác định vị trí</span>
+        <label class="vne-toggle-switch">
+            <input type="checkbox" id="autoLocate" onchange="toggleAutoLocate(this)">
+            <span class="vne-slider"></span>
+        </label>
+    </div>
+    <div class="vne-search-box">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" id="citySearchInput"
+               placeholder="Tìm địa điểm"
+               oninput="filterCities(this.value)"
+               autocomplete="off">
+    </div>
+    <ul class="vne-city-list" id="cityList"></ul>
+</div>
+
+@* Overlay đóng dropdown khi click ra ngoài — cũng được JS move sang body *@
+<div id="weatherOverlay" onclick="closeWeatherDropdown()" style="display:none"></div>
+
+@functions {
+    static string GetMaterialIcon(string emoji) => emoji switch
+    {
+        "☀️" => "sunny",
+        "⛅" => "partly_cloudy_day",
+        "☁️" => "cloud",
+        "🌫️" => "foggy",
+        "🌦️" => "rainy",
+        "🌧️" => "rainy",
+        "❄️" => "weather_snowy",
+        "⛈️" => "thunderstorm",
+        _    => "thermometer",
+    };
+}

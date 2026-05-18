@@ -2325,3 +2325,154 @@ a {
     margin-bottom: 20px;
   }
 }/*# sourceMappingURL=style.css.map */
+
+/* ===== WEATHER BAR (VnExpress style) ===== */
+.vne-weather-bar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.9);
+    user-select: none;
+}
+.vne-weather-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 3px 5px;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+.vne-weather-trigger:hover { background: rgba(255,255,255,0.1); }
+.vne-city-name { font-weight: 500; }
+.vne-chevron {
+    font-size: 1rem !important;
+    color: rgba(255,255,255,0.7);
+    transition: transform 0.2s;
+}
+.vne-chevron.open { transform: rotate(180deg); }
+.vne-weather-icon { font-size: 1rem !important; color: #90caf9; }
+.vne-temp { font-size: 0.8rem; }
+.vne-divider { color: rgba(255,255,255,0.3); margin: 0 2px; font-size: 0.75rem; }
+.vne-date { font-size: 0.8rem; color: rgba(255,255,255,0.85); white-space: nowrap; }
+
+/* Dropdown — position:fixed so it escapes any overflow:hidden ancestor */
+.vne-weather-dropdown {
+    position: fixed !important;
+    /* top/left set by JS via getBoundingClientRect() */
+    width: 320px !important;
+    background: #fff !important;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+    z-index: 99999 !important;
+    overflow: hidden;
+    animation: vne-fadeIn 0.15s ease;
+    color: #333 !important;
+    font-size: 0.85rem !important;
+}
+@keyframes vne-fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.vne-dropdown-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.85rem;
+    color: #555;
+}
+.vne-dropdown-header .material-symbols-outlined { font-size: 1.1rem; color: #888; }
+.vne-dropdown-header span:nth-child(2) { flex: 1; }
+
+/* Toggle switch */
+.vne-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px; height: 22px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+.vne-toggle-switch input { opacity: 0; width: 0; height: 0; }
+.vne-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #ccc;
+    border-radius: 22px;
+    transition: 0.3s;
+}
+.vne-slider:before {
+    content: "";
+    position: absolute;
+    width: 16px; height: 16px;
+    left: 3px; bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+.vne-toggle-switch input:checked + .vne-slider { background: #e81c23; }
+.vne-toggle-switch input:checked + .vne-slider:before { transform: translateX(18px); }
+
+/* Search */
+.vne-search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.vne-search-box .material-symbols-outlined { font-size: 1.1rem; color: #aaa; }
+.vne-search-box input {
+    border: none;
+    outline: none;
+    font-size: 0.85rem;
+    flex: 1;
+    color: #333;
+    background: transparent;
+}
+.vne-search-box input::placeholder { color: #bbb; }
+
+/* City list — !important to beat Bootstrap ul/li defaults */
+.vne-city-list {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 6px 0 !important;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.vne-city-list li {
+    padding: 9px 16px !important;
+    cursor: pointer;
+    font-size: 0.85rem !important;
+    color: #333 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.1s;
+    list-style: none !important;
+    background: transparent;
+}
+.vne-city-list li:hover { background: #f5f5f5; }
+.vne-city-list li.active { color: #e81c23; font-weight: 500; }
+.vne-default-tag {
+    font-size: 0.72rem;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+.vne-default-tag .material-symbols-outlined { font-size: 0.9rem; color: #e81c23; }
+.vne-city-list li > .material-symbols-outlined { font-size: 1rem; color: #e81c23; }
+
+/* Overlay */
+.vne-overlay { position: fixed; inset: 0; z-index: 9998; background: transparent; }
+
+/* Responsive */
+@media (max-width: 576px) {
+    .vne-date { display: none; }
+    .vne-weather-dropdown { width: 280px; }
+}

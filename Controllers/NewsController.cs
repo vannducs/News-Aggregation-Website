@@ -6,9 +6,8 @@ using System.Security.Claims;
 
 namespace NewsAggregator.Controllers
 {
-    public class NewsController : BaseController
+    public class NewsController(AppDbContext db) : BaseController(db)
     {
-        public NewsController(AppDbContext db) : base(db) {}
         
         public async Task<IActionResult> Index()
         {
@@ -74,6 +73,26 @@ namespace NewsAggregator.Controllers
 
             return View(post);
         }
+        public async Task<IActionResult> BySource(int id)
+        {
+            var source = await _db.Sources
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.SourceID == id && s.IsActive && !s.IsDeleted);
+            if (source == null) return NotFound();
+
+            ViewData["Title"]      = source.SourceName;
+            ViewData["MenuName"]   = source.SourceName;
+            ViewData["SourceID"]   = id;
+
+            var posts = await PostSummaryQuery()
+                .Where(p => p.IsActive && !p.IsDeleted && p.SourceID == id)
+                .OrderByDescending(p => p.CreatedDate)
+                .Take(20)
+                .ToListAsync();
+
+            return View("Category", posts);
+        }
+
         public async Task<IActionResult> Search(string q)
         {
             ViewData["Title"] = $"Tìm kiếm: {q}";

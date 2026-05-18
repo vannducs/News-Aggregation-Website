@@ -58,6 +58,7 @@ builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<TrashPurgeService>();
 builder.Services.AddScoped<PostImageFixService>();
 builder.Services.AddScoped<IUniversalArticleExtractorService, UniversalArticleExtractorService>();
+builder.Services.AddSingleton<IWeatherService, WeatherService>();
 
 // HANGFIRE
 builder.Services.AddHangfire(config =>
@@ -113,6 +114,7 @@ RecurringJob.AddOrUpdate<TrashPurgeService>(
 await SeedData.InitializeAsync(app.Services);
 
 // ROUTING
+app.MapControllers(); // attribute-routed API controllers (e.g. /api/weather)
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");

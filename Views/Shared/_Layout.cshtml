@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@inject IWeatherService WeatherService
+<!DOCTYPE html>
 
 <!--
  // WEBSITE: https://themefisher.com
@@ -36,18 +37,110 @@
     <link rel="stylesheet" href="~/css/style.css">
     <!-- Google Font: Be Vietnam Pro (cho tiêu đề) -->
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Material Symbols (dùng cho weather bar) -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,300,0,0" rel="stylesheet">
 
     <style>
         h1, h2, h3, .post-title, .news-title span { font-family: 'Be Vietnam Pro', sans-serif !important; }
 
-        /* ===== NAVBAR VNEXPRESS STYLE ===== */
+        /* ===== STICKY WRAPPER — giữ cả 2 navbar dính cùng nhau ===== */
+        .sticky-navs {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        /* ===== SOURCE NAVBAR ===== */
+        .src-navbar {
+            background: #2a2a2a;
+            display: flex;
+            align-items: stretch;
+            height: 40px;
+            border-bottom: 1px solid rgba(255,255,255,.1);
+        }
+        .src-nav-inner {
+            flex: 1;
+            overflow: hidden;
+            min-width: 0;
+        }
+        .src-nav-list {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            scroll-behavior: smooth;
+            height: 100%;
+            align-items: center;
+        }
+        .src-nav-list::-webkit-scrollbar { display: none; }
+        .src-nav-list li { flex-shrink: 0; }
+        .src-nav-list li a {
+            display: block;
+            padding: 0 14px;
+            line-height: 38px;
+            color: #aaa;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            border-bottom: 2px solid transparent;
+            transition: color .2s, border-color .2s;
+        }
+        .src-nav-list li a:hover,
+        .src-nav-list li.src-active a {
+            color: #fff;
+            border-bottom-color: #4dabf7;
+        }
+        .src-search-area {
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            border-left: 1px solid rgba(255,255,255,.12);
+            flex-shrink: 0;
+        }
+        .src-search-form { display: flex; align-items: center; }
+        .src-search-input {
+            background: rgba(255,255,255,.1);
+            border: 1px solid rgba(255,255,255,.15);
+            border-right: none;
+            border-radius: 3px 0 0 3px;
+            color: #fff;
+            font-size: 12px;
+            padding: 0 10px;
+            width: 150px;
+            height: 28px;
+            outline: none;
+            transition: background .2s, width .3s;
+        }
+        .src-search-input::placeholder { color: rgba(255,255,255,.45); }
+        .src-search-input:focus {
+            background: rgba(255,255,255,.15);
+            width: 200px;
+        }
+        .src-search-btn {
+            background: #e53935;
+            border: none;
+            border-radius: 0 3px 3px 0;
+            color: #fff;
+            padding: 0 11px;
+            height: 28px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background .2s;
+            flex-shrink: 0;
+        }
+        .src-search-btn:hover { background: #c62828; }
+
+        /* ===== CATEGORY NAVBAR VNEXPRESS STYLE ===== */
         .vne-navbar {
             background: #1a1a1a;
             display: flex;
             align-items: stretch;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
             border-bottom: 2px solid #c0392b;
         }
         .vne-nav-inner {
@@ -149,33 +242,11 @@
                          style="max-height:40px; width:auto; display:block;">
                 </a>
             </div>
-            <div class="col-lg-5">
-                <h3 class="trending-bar-title">Trending News</h3>
-                <div class="trending-news-slider">
-                    <div class="item">
-                        <div class="post-content">
-                            <h2 class="post-title title-sm">
-                                <a href="#">Ex-Googler warns coding bootcamps are lacking</a>
-                            </h2>
-                        </div>
-                    </div>
-                    <div class="item">
-                        <div class="post-content">
-                            <h2 class="post-title title-sm">
-                                <a href="#">Intel's new smart glasses actually look good</a>
-                            </h2>
-                        </div>
-                    </div>
-                    <div class="item">
-                        <div class="post-content">
-                            <h2 class="post-title title-sm">
-                                <a href="#">Here's How To Get Free Pizza On 2 hour</a>
-                            </h2>
-                        </div>
-                    </div>
-                </div>
+            @* ── Weather bar — hiện bên phải logo ── *@
+            <div class="col-auto pl-3">
+                @{ var weather = await WeatherService.GetWeatherAsync(); }
+                <partial name="_WeatherBar" model="weather" />
             </div>
-
             <div class="col top-nav-social-lists text-right ml-auto">
                 <ul class="list-unstyled mt-4 mt-lg-0">
                     <li>
@@ -232,7 +303,43 @@
 </div>
 
 
-@* ===== NAVBAR — VNEXPRESS STYLE ===== *@
+@* ===== STICKY WRAPPER: SOURCE NAVBAR + CATEGORY NAVBAR ===== *@
+<div class="sticky-navs">
+
+@* Thanh nguồn báo (trên) *@
+<nav class="src-navbar">
+    <div class="src-nav-inner">
+        <ul class="src-nav-list" id="srcNavList">
+            <li>
+                <a asp-controller="News" asp-action="Index">Tất cả</a>
+            </li>
+            @if (ViewBag.Sources != null)
+            {
+                foreach (var src in ViewBag.Sources)
+                {
+                    <li>
+                        <a asp-controller="News" asp-action="BySource"
+                           asp-route-id="@src.SourceID">@src.SourceName</a>
+                    </li>
+                }
+            }
+        </ul>
+    </div>
+    <div class="src-search-area">
+        <form method="get" asp-controller="News" asp-action="Search" class="src-search-form">
+            <input type="text" name="q" id="srcSearchInput"
+                   class="src-search-input"
+                   placeholder="Tìm kiếm tin tức..."
+                   value="@(ViewBag.Keyword as string ?? "")"
+                   autocomplete="off">
+            <button type="submit" class="src-search-btn" title="Tìm kiếm">
+                <i class="fa fa-search"></i>
+            </button>
+        </form>
+    </div>
+</nav>
+
+@* Thanh danh mục (dưới) — VNEXPRESS STYLE *@
 <nav class="vne-navbar" id="vneNavbar">
     <div class="vne-nav-inner">
         <ul class="vne-nav-list" id="vneNavList">
@@ -277,6 +384,8 @@
         </ul>
     </div>
 </nav>
+
+</div>@* end .sticky-navs *@
 
 @RenderBody()
 
@@ -332,6 +441,8 @@
 <script src="~/plugins/slick-carousel/slick.min.js"></script>
 <!-- main js -->
 <script src="~/js/custom.js"></script>
+<!-- weather bar -->
+<script src="~/js/weather.js"></script>
 
 @RenderSection("Scripts", required: false)
 
@@ -375,6 +486,21 @@
     });
 
     dropdown.addEventListener('click', function (e) { e.stopPropagation(); });
+})();
+
+// ── Source navbar active state ──
+(function () {
+    var srcList = document.getElementById('srcNavList');
+    if (!srcList) return;
+    var cur        = window.location.pathname.toLowerCase();
+    var isBySource = cur.indexOf('/bysource/') >= 0;
+    srcList.querySelectorAll('a').forEach(function (a) {
+        var p      = new URL(a.href).pathname.toLowerCase();
+        var isAll  = p === '/' || p === '/news' || p === '/news/index';
+        var active = isAll ? !isBySource && (cur === '/' || cur === '/news' || cur === '/news/index')
+                           : p === cur;
+        if (active) a.parentElement.classList.add('src-active');
+    });
 })();
 </script>
 
