@@ -247,7 +247,11 @@ namespace NewsAggregator.Data
                       CONSTRAINT UQ_SavedPosts UNIQUE (UserID, PostID)
                   );",
                 @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_tblPost_Listing' AND object_id = OBJECT_ID('tblPost'))
-                  CREATE INDEX IX_tblPost_Listing ON tblPost (IsDeleted, IsActive, CreatedDate DESC);"
+                  CREATE INDEX IX_tblPost_Listing ON tblPost (IsDeleted, IsActive, CreatedDate DESC);",
+                @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_tblPost_SourceID' AND object_id = OBJECT_ID('tblPost'))
+                  CREATE INDEX IX_tblPost_SourceID ON tblPost (SourceID, IsDeleted, IsActive);",
+                @"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_tblCrawlLogs_SourceTime' AND object_id = OBJECT_ID('tblCrawlLogs'))
+                  CREATE INDEX IX_tblCrawlLogs_SourceTime ON tblCrawlLogs (SourceID, CrawlTime DESC);"
             };
 
             foreach (var command in commands)

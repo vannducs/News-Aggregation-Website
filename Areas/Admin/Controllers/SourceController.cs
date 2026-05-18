@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NewsAggregator.Data;
 using NewsAggregator.Models;
+using NewsAggregator.Models.ViewModels;
 using NewsAggregator.Services;
 
 namespace NewsAggregator.Areas.Admin.Controllers;
@@ -16,8 +17,27 @@ public class SourceController(AppDbContext db, IUniversalArticleExtractorService
         ViewData["Title"] = "Quản lý nguồn báo";
 
         var sources = await db.Sources
+            .AsNoTracking()
             .Where(s => !s.IsDeleted)
             .OrderBy(s => s.SourceName)
+            .Select(s => new SourceListItem
+            {
+                SourceID        = s.SourceID,
+                SourceName      = s.SourceName,
+                RssUrl          = s.RssUrl,
+                WebsiteUrl      = s.WebsiteUrl,
+                LogoUrl         = s.LogoUrl,
+                IsActive        = s.IsActive,
+                PostCount       = s.Posts.Count(p => !p.IsDeleted && p.IsActive),
+                LastCrawledAt   = s.CrawlLogs
+                                    .OrderByDescending(l => l.CrawlTime)
+                                    .Select(l => (DateTime?)l.CrawlTime)
+                                    .FirstOrDefault(),
+                LastCrawlStatus = s.CrawlLogs
+                                    .OrderByDescending(l => l.CrawlTime)
+                                    .Select(l => l.Status)
+                                    .FirstOrDefault(),
+            })
             .ToListAsync();
 
         return View(sources);
