@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using HtmlAgilityPack;
 using NewsAggregator.Models;
@@ -15,25 +17,62 @@ namespace NewsAggregator.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<UniversalArticleExtractorService> _logger;
 
-        // Thử lần lượt, lấy node có score (textLength + paragraphCount×80) cao nhất
+        // ══════════════════════════════════════════════════════════════════
+        // CONTENT SELECTORS — xếp theo độ ưu tiên (score-based selection)
+        // Mỗi selector được score = textLen + pCount×80; lấy node cao nhất
+        // ══════════════════════════════════════════════════════════════════
         private static readonly string[] ContentSelectors =
         {
-            "//*[@itemprop='articleBody']",               // Schema.org — ~60% báo
-            "//*[contains(@class,'fck_detail')]",          // VnExpress
-            "//*[contains(@class,'detail-content')]",      // Tuổi Trẻ, Thanh Niên, PLO
-            "//*[contains(@class,'singular-content')]",    // Dân Trí
-            "//*[contains(@class,'the-article-body')]",    // Zing/Znews
-            "//*[contains(@class,'content-detail')]",      // VietnamNet
-            "//*[contains(@class,'article-content')]",     // VTV, VOV, Nhân Dân, QDND
-            "//*[contains(@class,'detail-body')]",         // NLD, Tiền Phong
-            "//*[contains(@class,'detail__body')]",
-            "//*[contains(@class,'post-content')]",
-            "//*[contains(@class,'entry-content')]",
+            // ── Schema.org (~60% báo lớn hiện đại) ──────────────────────
+            "//*[@itemprop='articleBody']",
+
+            // ── Báo lớn Việt Nam ─────────────────────────────────────────
+            "//*[contains(@class,'fck_detail')]",           // VnExpress
+            "//*[contains(@class,'detail-content')]",       // Tuổi Trẻ, Thanh Niên, Soha, PLO, Pháp Luật
+            "//*[contains(@class,'singular-content')]",     // Dân Trí
+            "//*[contains(@class,'the-article-body')]",     // ZNews/Zing
+            "//*[contains(@class,'content-detail')]",       // VietnamNet
+            "//*[contains(@class,'article-content')]",      // VTV, VOV, Nhân Dân, Quân Đội, CAND, Tiền Phong (cũ)
+            "//*[contains(@class,'article__content')]",     // Sức Khỏe & Đời Sống, Tiếp Thị & Gia Đình
+            "//*[contains(@class,'article__body')]",        // Tiền Phong (mới), Sức Khỏe
+            "//*[contains(@class,'article-body')]",         // Lao Động, một số báo CMS khác
+            "//*[contains(@class,'detail-body')]",          // NLD (Người Lao Động)
+            "//*[contains(@class,'detail__body')]",         // biến thể
+            "//*[contains(@class,'contentdetail')]",        // CafeF, CafeBiz
+            "//*[contains(@class,'cms-body')]",             // CafeF CMS (biến thể mới)
+            "//*[contains(@class,'knc-body')]",             // Kenh14
+            "//*[contains(@class,'nd-detail')]",            // Nhân Dân (cũ)
+            "//*[contains(@class,'detail-content-area')]",  // một số báo tỉnh
+
+            // ── Generic / WordPress / Joomla ─────────────────────────────
+            "//*[contains(@class,'post-content')]",         // WordPress standard
+            "//*[contains(@class,'entry-content')]",        // WordPress standard
+            "//*[contains(@class,'post-body')]",            // Blogger/BlogSpot
             "//*[contains(@class,'news-content')]",
-            "//*[contains(@id,'ArticleContent')]",         // báo .NET Webforms cũ
-            "//*[@id='noidung']",                          // Dân Trí cũ, Lao Động
+            "//*[contains(@class,'news-detail')]",          // Báo địa phương
+            "//*[contains(@class,'article-detail')]",       // Báo địa phương
+            "//*[contains(@class,'main-content')]",
+            "//*[contains(@class,'body-content')]",
+            "//*[contains(@class,'text-content')]",
+            "//*[contains(@class,'content-body')]",
+            "//*[contains(@class,'article-text')]",
+            "//*[contains(@class,'full-article')]",
+            "//*[contains(@class,'story-body')]",
+            "//*[contains(@class,'body-text')]",
+
+            // ── ID-based ─────────────────────────────────────────────────
+            "//*[@id='ArticleContent']",                    // .NET WebForms cũ
+            "//*[@id='article-content']",
+            "//*[@id='content_detail']",
+            "//*[@id='noidung']",                           // Dân Trí cũ, Lao Động
             "//*[@id='maincontent']",
-            "//article",                                   // HTML5 fallback
+            "//*[@id='main-content']",
+            "//*[@id='main-detail-body']",                  // VnExpress alternate
+            "//*[@id='content-article']",
+
+            // ── HTML5 semantic fallback ───────────────────────────────────
+            "//article",
+            "//main",
         };
 
         private static readonly string[] ViDateFormats =
@@ -46,6 +85,33 @@ namespace NewsAggregator.Services
             "dd-MM-yyyy",
         };
 
+        // Map HTML entity name → replacement (để fix RSS có HTML entity chưa declare)
+        private static readonly Dictionary<string, string> HtmlEntityFixes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["nbsp"]   = " ",  ["ndash"]  = "–",  ["mdash"]  = "—",
+            ["laquo"]  = "«",  ["raquo"]  = "»",  ["hellip"] = "…",
+            ["copy"]   = "©",  ["reg"]    = "®",  ["trade"]  = "™",
+            ["euro"]   = "€",  ["pound"]  = "£",  ["yen"]    = "¥",
+            ["bull"]   = "•",  ["lsquo"]  = "‘", ["rsquo"] = "’",
+            ["ldquo"]  = "“", ["rdquo"] = "”",
+            ["deg"]    = "°",  ["times"]  = "×",  ["divide"] = "÷",
+            ["prime"]  = "′",  ["Prime"]  = "″",  ["frac12"] = "½",
+            ["frac14"] = "¼",  ["frac34"] = "¾",  ["cent"]   = "¢",
+            ["plusmn"] = "±",  ["sup2"]   = "²",  ["sup3"]   = "³",
+        };
+
+        private static readonly Regex EntityRegex = new(
+            @"&(?!(amp|lt|gt|quot|apos|#\d+|#x[\da-fA-F]+);)([A-Za-z]\w*);",
+            RegexOptions.Compiled);
+
+        private static readonly Regex InvalidXmlChars = new(
+            @"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]",
+            RegexOptions.Compiled);
+
+        private static readonly Regex XmlEncodingDecl = new(
+            @"encoding\s*=\s*[""']([^""']+)[""']",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         public UniversalArticleExtractorService(
             IHttpClientFactory httpClientFactory,
             ILogger<UniversalArticleExtractorService> logger)
@@ -54,9 +120,9 @@ namespace NewsAggregator.Services
             _logger = logger;
         }
 
-        // ────────────────────────────────────────────────────────────────
-        // RSS — đọc bytes rồi decode UTF-8 để tránh encoding trap
-        // ────────────────────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════
+        // RSS — đọc bytes, detect encoding, sanitize, parse với recovery
+        // ════════════════════════════════════════════════════════════════
 
         public async Task<List<RssFeedItem>> GetRssFeedItemsAsync(string rssUrl)
         {
@@ -64,78 +130,194 @@ namespace NewsAggregator.Services
             try
             {
                 var client = _httpClientFactory.CreateClient("ArticleExtractor");
-                // GetByteArrayAsync + decode thủ công: AutomaticDecompression đã giải nén
-                // nhưng GetStringAsync đôi khi đoán sai encoding → đọc bytes + UTF-8 an toàn hơn
-                var bytes = await client.GetByteArrayAsync(rssUrl);
-                var xml   = System.Text.Encoding.UTF8.GetString(bytes).TrimStart('﻿');
+                var bytes  = await client.GetByteArrayAsync(rssUrl);
 
-                var doc = XDocument.Parse(xml);
+                // 1) Detect encoding từ XML declaration hoặc BOM
+                var enc = DetectXmlEncoding(bytes);
+                var xml = enc.GetString(bytes).TrimStart('﻿');
+
+                // 2) Sanitize: xóa ký tự không hợp lệ trong XML 1.0
+                xml = InvalidXmlChars.Replace(xml, "");
+
+                // 3) Strip DOCTYPE — XDocument.Parse mặc định DtdProcessing.Prohibit,
+                //    gặp <!DOCTYPE> bất kỳ là throw ngay, kể cả RSS hợp lệ có DOCTYPE
+                xml = StripDoctype(xml);
+
+                // 4) Phát hiện server trả về HTML thay vì RSS (URL sai, redirect, block...)
+                if (IsHtmlResponse(xml))
+                {
+                    Console.WriteLine($"[RSS] ❌ URL trả về trang HTML, không phải RSS/XML: {rssUrl}");
+                    Console.WriteLine($"[RSS] → Kiểm tra lại RSS URL. Thử mở URL trong trình duyệt xem có phải feed không.");
+                    return result;
+                }
+
+                // 5) Fix HTML entities chưa được declare trong XML
+                xml = EntityRegex.Replace(xml, m =>
+                {
+                    var name = m.Groups[2].Value.TrimEnd(';');
+                    return HtmlEntityFixes.TryGetValue(name, out var rep) ? rep : " ";
+                });
+
+                // 6) Parse — strict trước, nếu lỗi thì dùng lenient reader
+                XDocument doc;
+                try
+                {
+                    doc = XDocument.Parse(xml);
+                }
+                catch (System.Xml.XmlException xmlEx)
+                {
+                    Console.WriteLine($"[RSS] XML không chuẩn, thử lenient parser: {xmlEx.Message}");
+                    var settings = new System.Xml.XmlReaderSettings
+                    {
+                        DtdProcessing    = System.Xml.DtdProcessing.Ignore,
+                        CheckCharacters  = false,
+                        ConformanceLevel = System.Xml.ConformanceLevel.Fragment,
+                    };
+                    using var sr     = new StringReader(xml);
+                    using var reader = System.Xml.XmlReader.Create(sr, settings);
+                    doc = XDocument.Load(reader, LoadOptions.None);
+                }
 
                 XNamespace media   = "http://search.yahoo.com/mrss/";
                 XNamespace dc      = "http://purl.org/dc/elements/1.1/";
                 XNamespace content = "http://purl.org/rss/1.0/modules/content/";
+                XNamespace atom    = "http://www.w3.org/2005/Atom";
 
-                foreach (var item in doc.Descendants("item"))
+                // 5) Hỗ trợ cả RSS 2.0 (<item>) và Atom 1.0 (<entry>)
+                var rssItems    = doc.Descendants("item").ToList();
+                var atomEntries = doc.Descendants(atom + "entry").ToList();
+                bool isAtom     = !rssItems.Any() && atomEntries.Any();
+                var items       = isAtom ? atomEntries : rssItems;
+
+                Console.WriteLine($"[RSS] {rssUrl}: {items.Count} {(isAtom ? "Atom entries" : "RSS items")}");
+
+                foreach (var item in items)
                 {
-                    var title = item.Element("title")?.Value?.Trim();
-                    var link  = item.Element("link")?.Value?.Trim()
-                             ?? item.Elements().FirstOrDefault(e => e.Name.LocalName == "link")?.Value?.Trim();
+                    string? title, link, description, author, category, pubDateStr;
+                    string? imageUrl = null;
+
+                    if (isAtom)
+                    {
+                        // ── Atom 1.0 ─────────────────────────────────────
+                        title = item.Element(atom + "title")?.Value?.Trim();
+
+                        var altLink = item.Elements(atom + "link")
+                            .FirstOrDefault(l => l.Attribute("rel")?.Value is null or "alternate");
+                        link = altLink?.Attribute("href")?.Value?.Trim()
+                            ?? item.Element(atom + "id")?.Value?.Trim();
+
+                        var summaryEl = item.Element(atom + "content")
+                                     ?? item.Element(atom + "summary");
+                        description = summaryEl?.Value?.Trim();
+
+                        var authorEl = item.Element(atom + "author");
+                        author = authorEl?.Element(atom + "name")?.Value?.Trim();
+
+                        category = item.Elements(atom + "category")
+                            .FirstOrDefault()?.Attribute("term")?.Value?.Trim()
+                            ?? item.Elements(atom + "category").FirstOrDefault()?.Value?.Trim();
+
+                        pubDateStr = item.Element(atom + "published")?.Value?.Trim()
+                                  ?? item.Element(atom + "updated")?.Value?.Trim();
+                    }
+                    else
+                    {
+                        // ── RSS 2.0 ──────────────────────────────────────
+                        title = item.Element("title")?.Value?.Trim();
+
+                        // Link: text content → href attribute → guid permalink
+                        var linkEl = item.Elements().FirstOrDefault(e => e.Name.LocalName == "link");
+                        link = linkEl?.Value?.Trim();
+                        if (string.IsNullOrEmpty(link))
+                            link = linkEl?.Attribute("href")?.Value?.Trim();
+                        if (string.IsNullOrEmpty(link))
+                        {
+                            var guid = item.Element("guid");
+                            if (guid?.Attribute("isPermaLink")?.Value?.ToLower() != "false")
+                                link = guid?.Value?.Trim();
+                        }
+
+                        // Description: content:encoded (full HTML) → description (summary)
+                        description = item.Element(content + "encoded")?.Value?.Trim()
+                                   ?? item.Element("description")?.Value?.Trim();
+
+                        // Author: dc:creator → author
+                        author = item.Elements()
+                            .FirstOrDefault(e => e.Name.LocalName is "creator" or "author")
+                            ?.Value?.Trim();
+
+                        // Category
+                        category = item.Element("category")?.Value?.Trim()
+                                ?? item.Elements()
+                                       .FirstOrDefault(e => e.Name.LocalName == "category")
+                                       ?.Value?.Trim();
+
+                        // Date
+                        pubDateStr = item.Element("pubDate")?.Value?.Trim()
+                                  ?? item.Element(dc + "date")?.Value?.Trim();
+
+                        // Image: media:thumbnail → media:content → enclosure image
+                        imageUrl = item.Element(media + "thumbnail")?.Attribute("url")?.Value;
+                        if (imageUrl == null)
+                        {
+                            imageUrl = item.Elements()
+                                .FirstOrDefault(e =>
+                                    e.Name.LocalName is "thumbnail" or "content"
+                                    && e.Attribute("url") != null
+                                    && (e.Attribute("medium")?.Value == "image"
+                                        || e.Attribute("type")?.Value?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true
+                                        || e.Attribute("url")?.Value?.Contains("image") == true))
+                                ?.Attribute("url")?.Value;
+                        }
+                        if (imageUrl == null)
+                        {
+                            // media:content without type restriction (any URL)
+                            imageUrl = item.Elements()
+                                .FirstOrDefault(e => e.Name.LocalName is "thumbnail" or "content"
+                                                  && e.Attribute("url") != null)
+                                ?.Attribute("url")?.Value;
+                        }
+                        if (imageUrl == null)
+                        {
+                            var enclosure = item.Element("enclosure");
+                            var encType   = enclosure?.Attribute("type")?.Value ?? "";
+                            if (encType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                                imageUrl = enclosure?.Attribute("url")?.Value;
+                        }
+                    }
 
                     if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(link)) continue;
+                    if (!link.StartsWith("http", StringComparison.OrdinalIgnoreCase)) continue;
 
-                    var pubDateStr  = item.Element("pubDate")?.Value?.Trim()
-                                  ?? item.Element(dc + "date")?.Value?.Trim();
-                    var description = item.Element("description")?.Value?.Trim()
-                                  ?? item.Element(content + "encoded")?.Value?.Trim();
-                    var author      = item.Elements()
-                                         .FirstOrDefault(e => e.Name.LocalName is "author" or "creator")
-                                         ?.Value?.Trim();
-                    var category    = item.Element("category")?.Value?.Trim()
-                                  ?? item.Elements()
-                                         .FirstOrDefault(e => e.Name.LocalName == "category")
-                                         ?.Value?.Trim();
+                    // Fallback image từ description HTML
+                    if (imageUrl == null && !string.IsNullOrEmpty(description))
+                        imageUrl = ExtractFirstImageFromHtml(description);
 
-                    var feedItem = new RssFeedItem
+                    result.Add(new RssFeedItem
                     {
                         Title         = title,
                         Url           = link,
                         Summary       = StripHtml(description ?? ""),
+                        ImageUrl      = imageUrl,
                         Author        = author,
                         Category      = category,
                         PublishedDate = ParseDate(pubDateStr),
-                    };
-
-                    // Ảnh: media:thumbnail → enclosure → img đầu tiên trong description
-                    feedItem.ImageUrl =
-                        item.Element(media + "thumbnail")?.Attribute("url")?.Value
-                     ?? item.Elements()
-                            .FirstOrDefault(e => e.Name.LocalName is "thumbnail" or "content")
-                            ?.Attribute("url")?.Value;
-
-                    if (feedItem.ImageUrl == null)
-                    {
-                        var enclosure = item.Element("enclosure");
-                        var encType   = enclosure?.Attribute("type")?.Value ?? "";
-                        if (encType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
-                            feedItem.ImageUrl = enclosure?.Attribute("url")?.Value;
-                    }
-
-                    if (feedItem.ImageUrl == null && !string.IsNullOrEmpty(description))
-                        feedItem.ImageUrl = ExtractFirstImageFromHtml(description);
-
-                    result.Add(feedItem);
+                    });
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[RSS] Lỗi đọc feed: {Url}", rssUrl);
+                Console.WriteLine($"[RSS] Lỗi đọc feed {rssUrl}: {ex.GetType().Name}: {ex.Message}");
             }
+
+            Console.WriteLine($"[RSS] Đọc được {result.Count} items từ {rssUrl}");
             return result;
         }
 
-        // ────────────────────────────────────────────────────────────────
-        // Crawl bài báo từ URL
-        // ────────────────────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════
+        // Article — crawl URL → extract HTML → title, content, image, author, date
+        // ════════════════════════════════════════════════════════════════
 
         public async Task<ArticleExtractResult> ExtractArticleAsync(string articleUrl)
         {
@@ -143,7 +325,10 @@ namespace NewsAggregator.Services
             try
             {
                 var client = _httpClientFactory.CreateClient("ArticleExtractor");
-                var html   = await client.GetStringAsync(articleUrl);
+                // GetByteArrayAsync để detect encoding đúng (tránh garbled text)
+                var bytes = await client.GetByteArrayAsync(articleUrl);
+                var enc   = DetectHtmlEncoding(bytes);
+                var html  = enc.GetString(bytes);
 
                 var doc = new HtmlDocument();
                 doc.LoadHtml(html);
@@ -152,7 +337,7 @@ namespace NewsAggregator.Services
                 result.ImageUrl      = ExtractImage(doc);
                 result.Author        = ExtractAuthor(doc);
                 result.PublishedDate = ExtractDate(doc);
-                (result.Content, result.ContentText) = ExtractContent(doc);
+                (result.Content, result.ContentText) = ExtractContent(doc, articleUrl);
                 result.IsSuccess = !string.IsNullOrWhiteSpace(result.Content)
                                 || !string.IsNullOrWhiteSpace(result.Title);
             }
@@ -165,9 +350,9 @@ namespace NewsAggregator.Services
             return result;
         }
 
-        // ────────────────────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════
         // Private extractors
-        // ────────────────────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════
 
         private static string ExtractTitle(HtmlDocument doc)
         {
@@ -189,14 +374,16 @@ namespace NewsAggregator.Services
             return doc.DocumentNode.SelectSingleNode("//title")?.InnerText?.Trim() ?? "";
         }
 
-        private static (string html, string text) ExtractContent(HtmlDocument doc)
+        private static (string html, string text) ExtractContent(HtmlDocument doc, string? sourceUrl = null)
         {
-            HtmlNode? bestNode = null;
-            int bestScore = 0;
+            HtmlNode? bestNode  = null;
+            int       bestScore = 0;
 
             foreach (var sel in ContentSelectors)
             {
-                var node = doc.DocumentNode.SelectSingleNode(sel);
+                HtmlNode? node;
+                try { node = doc.DocumentNode.SelectSingleNode(sel); }
+                catch { continue; }
                 if (node == null) continue;
 
                 var pCount  = node.SelectNodes(".//p")?.Count ?? 0;
@@ -206,7 +393,8 @@ namespace NewsAggregator.Services
                 if (score > bestScore) { bestScore = score; bestNode = node; }
             }
 
-            if (bestNode == null || bestScore < 300) return ("", "");
+            // Ngưỡng thấp: 100 — để không bỏ qua tin ngắn
+            if (bestNode == null || bestScore < 100) return ("", "");
 
             CleanNode(bestNode);
             return (bestNode.InnerHtml, StripHtml(bestNode.InnerText ?? ""));
@@ -214,7 +402,6 @@ namespace NewsAggregator.Services
 
         private static string? ExtractImage(HtmlDocument doc)
         {
-            // og:image và twitter:image — 100% báo lớn có
             foreach (var (attrName, attrVal) in new[]
             {
                 ("property", "og:image"),
@@ -227,7 +414,6 @@ namespace NewsAggregator.Services
                 if (IsImageUrl(val)) return val;
             }
 
-            // itemprop=image
             var imgNode = doc.DocumentNode.SelectSingleNode("//*[@itemprop='image']");
             if (imgNode != null)
             {
@@ -241,17 +427,12 @@ namespace NewsAggregator.Services
 
         private static string? ExtractAuthor(HtmlDocument doc)
         {
-            // meta[name=author] — ~70% báo
             var metaAuthor = GetMetaContent(doc, "name", "author");
-            if (!string.IsNullOrEmpty(metaAuthor) && metaAuthor.Length < 80)
-                return metaAuthor;
+            if (!string.IsNullOrEmpty(metaAuthor) && metaAuthor.Length < 80) return metaAuthor;
 
-            // meta[property=article:author]
             var articleAuthor = GetMetaContent(doc, "property", "article:author");
-            if (!string.IsNullOrEmpty(articleAuthor) && articleAuthor.Length < 80)
-                return articleAuthor;
+            if (!string.IsNullOrEmpty(articleAuthor) && articleAuthor.Length < 80) return articleAuthor;
 
-            // itemprop=author (Schema.org)
             var authorNode = doc.DocumentNode.SelectSingleNode("//*[@itemprop='author']");
             if (authorNode != null)
             {
@@ -261,7 +442,6 @@ namespace NewsAggregator.Services
                     return HtmlEntity.DeEntitize(text);
             }
 
-            // class-based: box-author (VnExpress, Thanh Niên) → author-name (Dân Trí) → author chung
             foreach (var cls in new[] { "box-author", "article-author", "author-name", "reporter", "writer", "author" })
             {
                 var node = doc.DocumentNode.SelectSingleNode($"//*[contains(@class,'{cls}')]");
@@ -275,16 +455,13 @@ namespace NewsAggregator.Services
 
         private static DateTime? ExtractDate(HtmlDocument doc)
         {
-            // article:published_time — Open Graph, ~90% báo có
             var ogDate = GetMetaContent(doc, "property", "article:published_time");
             if (TryParseDate(ogDate, out var dt0)) return dt0;
 
-            // <time datetime="..."> — HTML5, ~80% báo
             var timeVal = doc.DocumentNode.SelectSingleNode("//time[@datetime]")
                               ?.GetAttributeValue("datetime", "");
             if (TryParseDate(timeVal, out var dt1)) return dt1;
 
-            // itemprop=datePublished — Schema.org
             var dateNode = doc.DocumentNode.SelectSingleNode("//*[@itemprop='datePublished']");
             if (dateNode != null)
             {
@@ -294,12 +471,10 @@ namespace NewsAggregator.Services
                 if (TryParseDate(val, out var dt2)) return dt2;
             }
 
-            // meta[name=pubdate]
             var pubDate = GetMetaContent(doc, "name", "pubdate");
             if (TryParseDate(pubDate, out var dt3)) return dt3;
 
-            // class-based date: publish-date, date-publish...
-            foreach (var cls in new[] { "publish-date", "date-publish", "publish_date", "post-date" })
+            foreach (var cls in new[] { "publish-date", "date-publish", "publish_date", "post-date", "time-pub" })
             {
                 var raw = doc.DocumentNode
                     .SelectSingleNode($"//*[contains(@class,'{cls}')]")?.InnerText?.Trim();
@@ -309,15 +484,69 @@ namespace NewsAggregator.Services
             return null;
         }
 
-        // ────────────────────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════
+        // Encoding helpers
+        // ════════════════════════════════════════════════════════════════
+
+        // Detect encoding từ XML declaration (<?xml encoding="..."?>)
+        private static Encoding DetectXmlEncoding(byte[] bytes)
+        {
+            // BOM
+            if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+                return Encoding.UTF8;
+            if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE)
+                return Encoding.Unicode;
+
+            // Đọc ~300 bytes đầu dưới dạng ASCII để tìm XML declaration
+            var header = Encoding.ASCII.GetString(bytes, 0, Math.Min(300, bytes.Length));
+            var m      = XmlEncodingDecl.Match(header);
+            if (m.Success)
+            {
+                try { return Encoding.GetEncoding(m.Groups[1].Value); }
+                catch { /* encoding name lạ — fallback */ }
+            }
+
+            return Encoding.UTF8;
+        }
+
+        // Detect encoding từ HTML meta charset hoặc Content-Type header
+        private static Encoding DetectHtmlEncoding(byte[] bytes)
+        {
+            // BOM
+            if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+                return Encoding.UTF8;
+
+            // Đọc ~1000 bytes đầu để tìm <meta charset>
+            var preview = Encoding.ASCII.GetString(bytes, 0, Math.Min(1000, bytes.Length));
+
+            // <meta charset="windows-1252">
+            var m1 = Regex.Match(preview, @"<meta[^>]+charset\s*=\s*[""']?([^""'\s;>]+)", RegexOptions.IgnoreCase);
+            if (m1.Success)
+            {
+                try { return Encoding.GetEncoding(m1.Groups[1].Value); }
+                catch { }
+            }
+
+            // <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+            var m2 = Regex.Match(preview, @"charset=([^\s;""']+)", RegexOptions.IgnoreCase);
+            if (m2.Success)
+            {
+                try { return Encoding.GetEncoding(m2.Groups[1].Value); }
+                catch { }
+            }
+
+            return Encoding.UTF8;
+        }
+
+        // ════════════════════════════════════════════════════════════════
         // Utilities
-        // ────────────────────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════
 
         private static void CleanNode(HtmlNode node)
         {
             var removeSelectors = new[]
             {
-                ".//script", ".//style", ".//iframe", ".//noscript",
+                ".//script", ".//style", ".//iframe",
                 ".//*[contains(@class,'ads')]",
                 ".//*[contains(@class,'advertisement')]",
                 ".//*[contains(@class,'related')]",
@@ -327,6 +556,8 @@ namespace NewsAggregator.Services
                 ".//*[contains(@class,'tags')]",
                 ".//*[contains(@id,'ads')]",
                 ".//*[contains(@id,'banner')]",
+                ".//*[contains(@id,'comment')]",
+                ".//*[contains(@class,'sidebar')]",
             };
             foreach (var sel in removeSelectors)
             {
@@ -357,7 +588,11 @@ namespace NewsAggregator.Services
             if (string.IsNullOrEmpty(html)) return null;
             var d = new HtmlDocument();
             d.LoadHtml(html);
-            var src = d.DocumentNode.SelectSingleNode("//img")?.GetAttributeValue("src", "");
+            // Ưu tiên data-src (lazy load) trước khi lấy src
+            var img = d.DocumentNode.SelectSingleNode("//img");
+            if (img == null) return null;
+            var src = img.GetAttributeValue("data-src", "");
+            if (string.IsNullOrEmpty(src)) src = img.GetAttributeValue("src", "");
             return string.IsNullOrEmpty(src) ? null : src;
         }
 
@@ -378,15 +613,46 @@ namespace NewsAggregator.Services
             result = default;
             if (string.IsNullOrWhiteSpace(raw)) return false;
 
-            // ISO 8601, RFC 2822, và các format tự động khác
             if (DateTime.TryParse(raw, null,
                 System.Globalization.DateTimeStyles.RoundtripKind, out result))
                 return true;
 
-            // Format ngày Việt Nam
             return DateTime.TryParseExact(raw, ViDateFormats,
                 System.Globalization.CultureInfo.InvariantCulture,
                 System.Globalization.DateTimeStyles.None, out result);
+        }
+
+        // Xoá <!DOCTYPE...> khỏi XML string trước khi parse
+        // XDocument.Parse mặc định DtdProcessing.Prohibit → throw khi gặp DOCTYPE
+        private static string StripDoctype(string xml)
+        {
+            var start = xml.IndexOf("<!DOCTYPE", StringComparison.OrdinalIgnoreCase);
+            if (start < 0) return xml;
+
+            var i = start + 9; // bỏ qua "<!DOCTYPE"
+            var depth = 0;
+            while (i < xml.Length)
+            {
+                var c = xml[i];
+                if (c == '[') depth++;
+                else if (c == ']') depth--;
+                else if (c == '>' && depth == 0) { i++; break; }
+                i++;
+            }
+            return xml.Remove(start, i - start).TrimStart();
+        }
+
+        // Phát hiện server trả về HTML thay vì RSS/XML
+        private static bool IsHtmlResponse(string xml)
+        {
+            // Sau khi strip DOCTYPE, nếu còn bắt đầu bằng <html hoặc chứa </html> → là HTML
+            var trimmed = xml.TrimStart();
+            if (trimmed.StartsWith("<html", StringComparison.OrdinalIgnoreCase)) return true;
+            if (trimmed.StartsWith("<HTML", StringComparison.OrdinalIgnoreCase)) return true;
+            // Kiểm tra thêm: chứa thẻ HTML đặc trưng nhưng không có <rss hoặc <feed
+            var hasHtmlTag  = Regex.IsMatch(trimmed, @"<html[\s>]", RegexOptions.IgnoreCase);
+            var hasRssTag   = Regex.IsMatch(trimmed, @"<(rss|feed|channel|item|entry)\b", RegexOptions.IgnoreCase);
+            return hasHtmlTag && !hasRssTag;
         }
     }
 }
