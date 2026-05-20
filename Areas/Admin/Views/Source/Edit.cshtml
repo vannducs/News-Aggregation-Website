@@ -41,7 +41,7 @@
                         <div class="card-body">
                             <form asp-area="Admin" asp-controller="Source"
                                   asp-action="Edit" asp-route-id="@Model.SourceID"
-                                  method="post">
+                                  method="post" enctype="multipart/form-data">
                                 @Html.AntiForgeryToken()
 
                                 <input asp-for="SourceID" type="hidden" />
@@ -71,11 +71,27 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label asp-for="LogoUrl" class="form-label fw-semibold">
-                                        Logo URL
-                                    </label>
-                                    <input asp-for="LogoUrl" class="form-control">
-                                    <span asp-validation-for="LogoUrl" class="text-danger"></span>
+                                    <label class="form-label fw-semibold">Logo</label>
+
+                                    @* Giữ LogoUrl cũ khi không upload file mới *@
+                                    <input asp-for="LogoUrl" type="hidden" />
+
+                                    @* Preview logo hiện tại *@
+                                    <div class="mb-2" id="logoPreviewWrap"
+                                         style="@(string.IsNullOrEmpty(Model.LogoUrl) ? "display:none" : "")">
+                                        <img id="logoPreview"
+                                             src="@Model.LogoUrl"
+                                             alt="Logo"
+                                             style="max-height:60px; max-width:200px; border:1px solid #dee2e6; border-radius:6px; padding:4px; background:#fff;">
+                                    </div>
+
+                                    <input type="file" name="logoFile" id="logoFile"
+                                           class="form-control"
+                                           accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
+                                           onchange="previewLogo(this)">
+                                    <div class="form-text">
+                                        Chọn file ảnh (JPG, PNG, SVG...). Để trống nếu không muốn thay đổi.
+                                    </div>
                                 </div>
 
                                 <div class="mb-3">
@@ -106,3 +122,17 @@
         </div>
     </div>
 </main>
+
+@section Scripts {
+<script>
+function previewLogo(input) {
+    const wrap = document.getElementById('logoPreviewWrap');
+    const img  = document.getElementById('logoPreview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => { img.src = e.target.result; wrap.style.display = ''; };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+}

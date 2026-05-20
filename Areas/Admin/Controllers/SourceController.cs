@@ -10,8 +10,34 @@ namespace NewsAggregator.Areas.Admin.Controllers;
 
 [Area("Admin")]
 [Authorize(Roles = UserRoles.StaffRoles)]
-public class SourceController(AppDbContext db, IUniversalArticleExtractorService extractor) : Controller
+public class SourceController(
+    AppDbContext db,
+    IUniversalArticleExtractorService extractor,
+    IWebHostEnvironment env) : Controller
 {
+    private static readonly string[] AllowedLogoExts = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"];
+    private static readonly System.Text.RegularExpressions.Regex SlugRegex =
+        new(@"[^a-z0-9]+", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    // Lưu file logo vào wwwroot/images/logos/, trả về đường dẫn tương đối
+    private async Task<string?> SaveLogoAsync(IFormFile? file, string sourceName)
+    {
+        if (file == null || file.Length == 0) return null;
+
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!AllowedLogoExts.Contains(ext)) return null;
+
+        var safe     = SlugRegex.Replace(sourceName.ToLowerInvariant().Trim(), "-").Trim('-');
+        var fileName = $"logo-{safe}{ext}";
+        var logosDir = Path.Combine(env.WebRootPath, "images", "logos");
+        Directory.CreateDirectory(logosDir);
+
+        var fullPath = Path.Combine(logosDir, fileName);
+        await using var stream = new FileStream(fullPath, FileMode.Create);
+        await file.CopyToAsync(stream);
+
+        return $"/images/logos/{fileName}";
+    }
     public async Task<IActionResult> Index()
     {
         ViewData["Title"] = "Quản lý nguồn báo";
@@ -51,7 +77,7 @@ public class SourceController(AppDbContext db, IUniversalArticleExtractorService
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Source source)
+    public async Task<IActionResult> Create(Source source, IFormFile? logoFile)
     {
         if (ModelState.IsValid)
         {
@@ -60,17 +86,21 @@ public class SourceController(AppDbContext db, IUniversalArticleExtractorService
 
             if (exists)
             {
-                ModelState.AddModelError("SourceName",
-                    "Tên nguồn báo này đã tồn tại!");
+                ModelState.AddModelError("SourceName", "Tên nguồn báo này đã tồn tại!");
                 return View(source);
             }
 
             source.IsActive = true;
+
+            // Lưu logo nếu có upload
+            var uploaded = await SaveLogoAsync(logoFile, source.SourceName);
+            if (uploaded != null) source.LogoUrl = uploaded;
+
             db.Sources.Add(source);
             await db.SaveChangesAsync();
 
             Hangfire.BackgroundJob.Enqueue<CrawlerService>(
-                service => service.RunAllAsync());
+                service => service.CrawlSourceByIdAsync(source.SourceID));
 
             TempData["Success"] =
                 $"Thêm nguồn '{source.SourceName}' thành công! Đang crawl bài viết...";
@@ -93,12 +123,16 @@ public class SourceController(AppDbContext db, IUniversalArticleExtractorService
     // POST: /Admin/Source/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, Source source)
+    public async Task<IActionResult> Edit(int id, Source source, IFormFile? logoFile)
     {
         if (id != source.SourceID) return NotFound();
 
         if (ModelState.IsValid)
         {
+            // Upload logo mới nếu có, ngược lại giữ nguyên LogoUrl cũ từ hidden input
+            var uploaded = await SaveLogoAsync(logoFile, source.SourceName);
+            if (uploaded != null) source.LogoUrl = uploaded;
+
             db.Sources.Update(source);
             await db.SaveChangesAsync();
 
