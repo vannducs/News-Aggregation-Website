@@ -1,0 +1,8 @@
+@model IEnumerable<NewsAggregator.Models.Source>
+@foreach (var src in Model)
+{
+    <li>
+        <a asp-controller="News" asp-action="BySource"
+           asp-route-id="@src.SourceID">@src.SourceName</a>
+    </li>
+}

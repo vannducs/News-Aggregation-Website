@@ -313,16 +313,7 @@
             <li>
                 <a asp-controller="News" asp-action="Index">Tất cả</a>
             </li>
-            @if (ViewBag.Sources != null)
-            {
-                foreach (var src in ViewBag.Sources)
-                {
-                    <li>
-                        <a asp-controller="News" asp-action="BySource"
-                           asp-route-id="@src.SourceID">@src.SourceName</a>
-                    </li>
-                }
-            }
+            @await Component.InvokeAsync("SourceNav")
         </ul>
     </div>
     <div class="src-search-area">
