@@ -6,7 +6,6 @@
     var dateStr  = $"{dayName}, {now.Day}/{now.Month}/{now.Year}";
 }
 
-@* Critical dropdown styles — inline to bypass CSS cache & specificity wars *@
 <style>
 #weatherDropdown {
     position: fixed !important;
@@ -41,7 +40,6 @@
 #weatherDropdown .vne-dropdown-header .vne-header-label {
     flex: 1 !important;
 }
-/* Toggle switch */
 .vne-toggle-switch {
     position: relative !important;
     display: inline-block !important;
@@ -82,7 +80,6 @@
 .vne-toggle-switch input[type="checkbox"]:checked + .vne-slider::before {
     transform: translateX(18px) !important;
 }
-/* Search box */
 #weatherDropdown .vne-search-box {
     display: flex !important;
     align-items: center !important;
@@ -105,7 +102,6 @@
     box-shadow: none !important;
 }
 #weatherDropdown .vne-search-box input::placeholder { color: #bbb !important; }
-/* City list */
 #weatherDropdown .vne-city-list {
     list-style: none !important;
     margin: 0 !important;
@@ -143,7 +139,6 @@
     font-size: 1rem !important;
     color: #e81c23 !important;
 }
-/* Overlay */
 #weatherOverlay {
     position: fixed !important;
     inset: 0 !important;
@@ -158,7 +153,6 @@
 
 <div class="vne-weather-bar" id="weatherBar">
 
-    @* Trigger: tên thành phố + chevron + icon + nhiệt độ *@
     <div class="vne-weather-trigger" id="weatherTrigger" onclick="toggleWeatherDropdown()">
         <span class="vne-city-name" id="weatherCityName">@Model.City</span>
         <span class="material-symbols-outlined vne-chevron" id="weatherChevron">expand_more</span>
@@ -168,11 +162,9 @@
 
     <span class="vne-divider">|</span>
 
-    @* Ngày *@
     <span class="vne-date">@dateStr</span>
 </div>
 
-@* Dropdown — được JS move sang <body> lúc DOMContentLoaded *@
 <div id="weatherDropdown" style="display:none">
     <div class="vne-dropdown-header">
         <span class="material-symbols-outlined">location_on</span>
@@ -192,7 +184,6 @@
     <ul class="vne-city-list" id="cityList"></ul>
 </div>
 
-@* Overlay đóng dropdown khi click ra ngoài — cũng được JS move sang body *@
 <div id="weatherOverlay" onclick="closeWeatherDropdown()" style="display:none"></div>
 
 @functions {

@@ -50,7 +50,6 @@ namespace NewsAggregator.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<WeatherService> _logger;
 
-        // Per-city cache: cityName → (WeatherInfo, fetchTime)
         private readonly ConcurrentDictionary<string, (WeatherInfo Info, DateTime Time)> _cache = new();
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(30);
 
@@ -64,12 +63,10 @@ namespace NewsAggregator.Services
 
         public async Task<WeatherInfo> GetWeatherAsync(string cityName = "Hà Nội")
         {
-            // Trả cache nếu còn hạn
             if (_cache.TryGetValue(cityName, out var cached) &&
                 DateTime.Now - cached.Time < CacheDuration)
                 return cached.Info;
 
-            // Tìm tọa độ thành phố
             var city = VietnamCities.All.FirstOrDefault(c =>
                 string.Equals(c.Name, cityName, StringComparison.OrdinalIgnoreCase))
                 ?? VietnamCities.All[0];

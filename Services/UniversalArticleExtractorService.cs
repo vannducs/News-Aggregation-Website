@@ -22,29 +22,29 @@ namespace NewsAggregator.Services
             "//*[@itemprop='articleBody']",
 
             // ── Báo lớn Việt Nam ─────────────────────────────────────────
-            "//*[contains(@class,'fck_detail')]",           // VnExpress
-            "//*[contains(@class,'detail-content')]",       // Tuổi Trẻ, Thanh Niên, Soha, PLO, Pháp Luật
-            "//*[contains(@class,'singular-content')]",     // Dân Trí
-            "//*[contains(@class,'the-article-body')]",     // ZNews/Zing
-            "//*[contains(@class,'content-detail')]",       // VietnamNet
-            "//*[contains(@class,'article-content')]",      // VTV, VOV, Nhân Dân, Quân Đội, CAND, Tiền Phong (cũ)
-            "//*[contains(@class,'article__content')]",     // Sức Khỏe & Đời Sống, Tiếp Thị & Gia Đình
-            "//*[contains(@class,'article__body')]",        // Tiền Phong (mới), Sức Khỏe
-            "//*[contains(@class,'article-body')]",         // Lao Động, một số báo CMS khác
-            "//*[contains(@class,'detail-body')]",          // NLD (Người Lao Động)
-            "//*[contains(@class,'detail__body')]",         // biến thể
-            "//*[contains(@class,'contentdetail')]",        // CafeF, CafeBiz
-            "//*[contains(@class,'cms-body')]",             // CafeF CMS (biến thể mới)
-            "//*[contains(@class,'knc-body')]",             // Kenh14
-            "//*[contains(@class,'nd-detail')]",            // Nhân Dân (cũ)
-            "//*[contains(@class,'detail-content-area')]",  // một số báo tỉnh
-            // ── Generic / WordPress / Joomla ─────────────────────────────
-            "//*[contains(@class,'post-content')]",         // WordPress standard
-            "//*[contains(@class,'entry-content')]",        // WordPress standard
-            "//*[contains(@class,'post-body')]",            // Blogger/BlogSpot
+            "//*[contains(@class,'fck_detail')]",           
+            "//*[contains(@class,'detail-content')]",       
+            "//*[contains(@class,'singular-content')]",     
+            "//*[contains(@class,'the-article-body')]",     
+            "//*[contains(@class,'content-detail')]",      
+            "//*[contains(@class,'article-content')]",      
+            "//*[contains(@class,'article__content')]",     
+            "//*[contains(@class,'article__body')]",        
+            "//*[contains(@class,'article-body')]",      
+            "//*[contains(@class,'detail-body')]",        
+            "//*[contains(@class,'detail__body')]",    
+            "//*[contains(@class,'contentdetail')]",      
+            "//*[contains(@class,'cms-body')]",         
+            "//*[contains(@class,'knc-body')]",           
+            "//*[contains(@class,'nd-detail')]",         
+            "//*[contains(@class,'detail-content-area')]", 
+            // wordpress
+            "//*[contains(@class,'post-content')]",        
+            "//*[contains(@class,'entry-content')]",       
+            "//*[contains(@class,'post-body')]",         
             "//*[contains(@class,'news-content')]",
-            "//*[contains(@class,'news-detail')]",          // Báo địa phương
-            "//*[contains(@class,'article-detail')]",       // Báo địa phương
+            "//*[contains(@class,'news-detail')]",         
+            "//*[contains(@class,'article-detail')]",      
             "//*[contains(@class,'main-content')]",
             "//*[contains(@class,'body-content')]",
             "//*[contains(@class,'text-content')]",
@@ -54,17 +54,15 @@ namespace NewsAggregator.Services
             "//*[contains(@class,'story-body')]",
             "//*[contains(@class,'body-text')]",
 
-            // ── ID-based ─────────────────────────────────────────────────
-            "//*[@id='ArticleContent']",                    // .NET WebForms cũ
+            "//*[@id='ArticleContent']",                    
             "//*[@id='article-content']",
             "//*[@id='content_detail']",
-            "//*[@id='noidung']",                           // Dân Trí cũ, Lao Động
+            "//*[@id='noidung']",                         
             "//*[@id='maincontent']",
             "//*[@id='main-content']",
-            "//*[@id='main-detail-body']",                  // VnExpress alternate
+            "//*[@id='main-detail-body']",              
             "//*[@id='content-article']",
 
-            // ── HTML5 semantic fallback ───────────────────────────────────
             "//article",
             "//main",
         };
@@ -129,7 +127,7 @@ namespace NewsAggregator.Services
 
                 if (IsHtmlResponse(xml))
                 {
-                    Console.WriteLine($"[RSS] ❌ URL trả về trang HTML, không phải RSS/XML: {rssUrl}");
+                    Console.WriteLine($"[RSS] → URL trả về trang HTML, không phải RSS/XML: {rssUrl}");
                     Console.WriteLine($"[RSS] → Kiểm tra lại RSS URL. Thử mở URL trong trình duyệt xem có phải feed không.");
                     return result;
                 }
