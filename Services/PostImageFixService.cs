@@ -3,10 +3,6 @@ using NewsAggregator.Data;
 
 namespace NewsAggregator.Services
 {
-    /// <summary>
-    /// One-time background job: re-processes Contents of all existing posts through
-    /// ContentHelper.FixContentImages() to fix lazy-loaded images stored in DB.
-    /// </summary>
     public class PostImageFixService(AppDbContext db)
     {
         public async Task RunAsync()

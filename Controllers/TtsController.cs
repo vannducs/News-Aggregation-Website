@@ -26,7 +26,6 @@ namespace NewsAggregator.Controllers
                 if (string.IsNullOrWhiteSpace(cleanText))
                     return BadRequest(new { error = "Không có nội dung văn bản để đọc!" });
 
-                //giới hạn 500 ký tự mỗi request
                 cleanText = cleanText.Length > 500 ? cleanText[..500] : cleanText;
 
                 _http.DefaultRequestHeaders.Clear();

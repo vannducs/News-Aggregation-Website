@@ -49,7 +49,6 @@ namespace NewsAggregator.Services.Crawlers
 
                     var menuId = ResolveMenuId(feedItem.Category, feedItem.Title);
 
-                    // ── Crawl full content từ URL bài báo ────────────────
                     string  contents = FixContentImages(feedItem.Summary ?? "", baseUrl);
                     string? imageUrl = feedItem.ImageUrl;
                     string? author   = feedItem.Author;
@@ -76,11 +75,9 @@ namespace NewsAggregator.Services.Crawlers
                     }
                     catch (Exception ex)
                     {
-                        // Giữ RSS data, vẫn lưu bài
                         Console.WriteLine($"  [{_source.SourceName}] Lỗi crawl article: {ex.Message}");
                     }
 
-                    // Chuẩn hoá abstract từ RSS summary
                     var summary = feedItem.Summary ?? "";
                     var abstract_ = summary.Length > 500 ? summary[..500] : summary;
 

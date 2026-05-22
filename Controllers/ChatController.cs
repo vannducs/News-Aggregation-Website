@@ -59,7 +59,6 @@ namespace NewsAggregator.Controllers
                 var json = JsonSerializer.Serialize(body);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // Thêm Authorization header
                 _http.DefaultRequestHeaders.Clear();
                 _http.DefaultRequestHeaders.Add(
                     "Authorization", $"Bearer {apiKey}");
@@ -70,14 +69,12 @@ namespace NewsAggregator.Controllers
                 Console.WriteLine($"[ChatBot] Status: {response.StatusCode}");
                 Console.WriteLine($"[ChatBot] Response: {responseJson[..Math.Min(200, responseJson.Length)]}");
 
-                // Xử lý rate limit
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                     return Ok(new { reply = "AI đang bận, vui lòng thử lại sau 1 phút! ⏳" });
 
                 if (!response.IsSuccessStatusCode)
                     return Ok(new { reply = "AI tạm thời không khả dụng, vui lòng thử lại!" });
 
-                // Parse kết quả Groq — format giống OpenAI
                 using var doc = JsonDocument.Parse(responseJson);
                 var text = doc.RootElement
                     .GetProperty("choices")[0]
@@ -95,7 +92,6 @@ namespace NewsAggregator.Controllers
         }
     }
 
-    // Model nhận request từ frontend
     public class ChatRequest
     {
         public string Message { get; set; } = string.Empty;

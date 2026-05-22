@@ -5,7 +5,6 @@ namespace NewsAggregator.Services
 {
     public static class ContentHelper
     {
-        // Strips layout-breaking properties from figure/picture inline styles.
         private static readonly Regex FigureHeightRegex = new(
             @"\b(height|min-height|padding-top|padding-bottom)\s*:\s*[^;]+;?\s*",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -37,12 +36,9 @@ namespace NewsAggregator.Services
 
             return root.InnerHtml;
         }
-
-        // Backward-compatible wrapper used by BaseCrawler and PostImageFixService.
         public static string FixContentImages(string html, string? baseUrl = null)
             => NormalizeArticleHtml(html, baseUrl);
 
-        // Extract scheme://host from any URL — used by crawlers.
         public static string ExtractBaseUrl(string url)
         {
             if (string.IsNullOrEmpty(url)) return url;
@@ -51,12 +47,9 @@ namespace NewsAggregator.Services
             return url;
         }
 
-        // ── Private helpers ────────────────────────────────────────────────
 
         private static void RemoveNonContentNodes(HtmlNode root)
         {
-            // Only remove nodes that are never legitimate article content.
-            // Do NOT remove noscript (some sites put fallback <img> inside noscript).
             foreach (var tag in new[] { "script", "style", "iframe" })
             {
                 var nodes = root.SelectNodes($"//{tag}");
